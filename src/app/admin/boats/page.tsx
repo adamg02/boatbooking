@@ -14,6 +14,7 @@ interface Boat {
   description: string | null;
   capacity: number;
   imageUrl: string | null;
+  isActive: boolean;
   boatGroups: Array<{
     group: Group;
   }>;
@@ -29,6 +30,7 @@ export default function AdminBoatsPage() {
     description: "",
     capacity: 1,
     imageUrl: "",
+    isActive: true,
   });
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -68,6 +70,7 @@ export default function AdminBoatsPage() {
       description: boat.description || "",
       capacity: boat.capacity,
       imageUrl: boat.imageUrl || "",
+      isActive: boat.isActive,
     });
     setSelectedGroups(boat.boatGroups.map((bg) => bg.group.id));
   };
@@ -79,6 +82,7 @@ export default function AdminBoatsPage() {
       description: "",
       capacity: 1,
       imageUrl: "",
+      isActive: true,
     });
     setSelectedGroups([]);
   };
@@ -101,7 +105,7 @@ export default function AdminBoatsPage() {
       if (res.ok) {
         await loadData();
         setEditingBoat(null);
-        setFormData({ name: "", description: "", capacity: 1, imageUrl: "" });
+        setFormData({ name: "", description: "", capacity: 1, imageUrl: "", isActive: true });
         setSelectedGroups([]);
       } else {
         alert("Failed to update boat");
@@ -125,13 +129,17 @@ export default function AdminBoatsPage() {
       const res = await fetch("/api/admin/boats", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          groupIds: selectedGroups,
+        }),
       });
 
       if (res.ok) {
         await loadData();
         setCreating(false);
-        setFormData({ name: "", description: "", capacity: 1, imageUrl: "" });
+        setFormData({ name: "", description: "", capacity: 1, imageUrl: "", isActive: true });
+        setSelectedGroups([]);
       } else {
         alert("Failed to create boat");
       }
@@ -178,7 +186,10 @@ export default function AdminBoatsPage() {
         {/* Boats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {boats.map((boat) => (
-            <div key={boat.id} className="bg-white rounded-lg shadow overflow-hidden">
+            <div 
+              key={boat.id} 
+              className={`bg-white rounded-lg shadow overflow-hidden ${!boat.isActive ? 'opacity-60' : ''}`}
+            >
               {boat.imageUrl && (
                 <img
                   src={boat.imageUrl}
@@ -187,7 +198,14 @@ export default function AdminBoatsPage() {
                 />
               )}
               <div className="p-4">
-                <h3 className="text-lg font-bold text-gray-900">{boat.name}</h3>
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="text-lg font-bold text-gray-900">{boat.name}</h3>
+                  {!boat.isActive && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                      Inactive
+                    </span>
+                  )}
+                </div>
                 {boat.description && (
                   <p className="text-sm text-gray-600 mt-1">{boat.description}</p>
                 )}
@@ -288,6 +306,30 @@ export default function AdminBoatsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Boat Status
+                  </label>
+                  <label className="flex items-center space-x-3 p-3 rounded-lg border border-gray-300 hover:bg-gray-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.isActive}
+                      onChange={(e) =>
+                        setFormData({ ...formData, isActive: e.target.checked })
+                      }
+                      className="w-4 h-4 text-green-600 rounded focus:ring-green-500"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">
+                        Active (accepting new bookings)
+                      </span>
+                      <p className="text-xs text-gray-500">
+                        Uncheck to prevent new bookings. Existing bookings remain valid.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Access Groups (leave empty for all users)
                   </label>
                   <div className="space-y-2">
@@ -315,7 +357,7 @@ export default function AdminBoatsPage() {
                 <button
                   onClick={() => {
                     setEditingBoat(null);
-                    setFormData({ name: "", description: "", capacity: 1, imageUrl: "" });
+                    setFormData({ name: "", description: "", capacity: 1, imageUrl: "", isActive: true });
                     setSelectedGroups([]);
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
@@ -399,13 +441,38 @@ export default function AdminBoatsPage() {
                     placeholder="https://example.com/boat.jpg"
                   />
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Access Groups (leave empty for all users)
+                  </label>
+                  <div className="space-y-2">
+                    {groups.map((group) => (
+                      <label
+                        key={group.id}
+                        className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedGroups.includes(group.id)}
+                          onChange={() => toggleGroup(group.id)}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-medium text-gray-900">
+                          {group.name}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => {
                     setCreating(false);
-                    setFormData({ name: "", description: "", capacity: 1, imageUrl: "" });
+                    setFormData({ name: "", description: "", capacity: 1, imageUrl: "", isActive: true });
+                    setSelectedGroups([]);
                   }}
                   className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                   disabled={saving}

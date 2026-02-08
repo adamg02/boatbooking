@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   try {
     await requireAdmin();
     const supabase = await getSupabaseClient();
-    const { boatId, name, description, capacity, imageUrl, groupIds } = await request.json();
+    const { boatId, name, description, capacity, imageUrl, isActive, groupIds } = await request.json();
 
     if (!boatId) {
       return NextResponse.json(
@@ -58,6 +58,7 @@ export async function POST(request: Request) {
         description,
         capacity,
         imageUrl,
+        isActive: isActive !== undefined ? isActive : true,
       })
       .eq('id', boatId);
 
@@ -113,7 +114,7 @@ export async function PUT(request: Request) {
   try {
     await requireAdmin();
     const supabase = await getSupabaseClient();
-    const { name, description, capacity, imageUrl } = await request.json();
+    const { name, description, capacity, imageUrl, isActive, groupIds } = await request.json();
 
     if (!name) {
       return NextResponse.json(
@@ -129,6 +130,7 @@ export async function PUT(request: Request) {
         description: description || null,
         capacity: capacity || 1,
         imageUrl: imageUrl || null,
+        isActive: isActive !== undefined ? isActive : true,
       })
       .select()
       .single();
@@ -139,6 +141,22 @@ export async function PUT(request: Request) {
         { error: "Failed to create boat" },
         { status: 500 }
       );
+    }
+
+    // Add boat to groups if provided
+    if (Array.isArray(groupIds) && groupIds.length > 0) {
+      const boatGroups = groupIds.map(groupId => ({
+        boatId: data.id,
+        groupId,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('BoatGroup')
+        .insert(boatGroups);
+
+      if (insertError) {
+        console.error('Insert boat groups error:', insertError);
+      }
     }
 
     return NextResponse.json(data);

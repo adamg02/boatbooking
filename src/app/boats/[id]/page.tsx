@@ -62,7 +62,14 @@ export default async function BoatBookingPage({
           >
             ← Back to boats
           </Link>
-          <h1 className="text-2xl font-bold">{boat.name}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">{boat.name}</h1>
+            {!boat.isActive && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                Not Available
+              </span>
+            )}
+          </div>
           {boat.description && (
             <p className="text-gray-600 dark:text-gray-400 mt-1">
               {boat.description}
@@ -72,7 +79,31 @@ export default async function BoatBookingPage({
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <BookingCalendar boat={boat} userId={user.id} />
+        {!boat.isActive ? (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+            <svg
+              className="w-12 h-12 text-yellow-600 mx-auto mb-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              This boat is currently unavailable
+            </h3>
+            <p className="text-gray-600">
+              New bookings cannot be made for this boat at this time. Please check back later or contact an administrator.
+            </p>
+          </div>
+        ) : (
+          <BookingCalendar boat={boat} userId={user.id} />
+        )}
       </main>
     </div>
   );

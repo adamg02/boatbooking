@@ -15,6 +15,7 @@ export default function AdminLayout({
     { href: "/admin", label: "Dashboard" },
     { href: "/admin/users", label: "Users" },
     { href: "/admin/boats", label: "Boats" },
+    { href: "/admin/groups", label: "Groups" },
     { href: "/admin/bookings", label: "Bookings" },
   ];
 

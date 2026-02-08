@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if boat exists
+    // Check if boat exists and is active
     const { data: boat, error: boatError } = await supabase
       .from('Boat')
       .select('*, boatGroups:BoatGroup(groupId)')
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       .single();
 
     if (boatError || !boat) {
-      return NextResponse.json({ error: "Boat not found" }, { status: 404 });
+      return NextResponse.json({ error: "Boat not found or not available for booking" }, { status: 404 });
     }
 
     // Check if user has permission to book this boat
