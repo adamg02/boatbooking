@@ -112,14 +112,14 @@ export default function AdminBookingsPage() {
   return (
     <AdminLayout>
       <div>
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-900">Booking Management</h2>
+        <div className="mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-0">Booking Management</h2>
 
           {/* Filter Buttons */}
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setFilter("all")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium ${
                 filter === "all"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -129,7 +129,7 @@ export default function AdminBookingsPage() {
             </button>
             <button
               onClick={() => setFilter("upcoming")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap ${
                 filter === "upcoming"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -147,7 +147,7 @@ export default function AdminBookingsPage() {
             </button>
             <button
               onClick={() => setFilter("past")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap ${
                 filter === "past"
                   ? "bg-blue-600 text-white"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -166,8 +166,62 @@ export default function AdminBookingsPage() {
           </div>
         </div>
 
-        {/* Bookings Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        {/* Mobile: Card View */}
+        <div className="sm:hidden space-y-3">
+          {filteredBookings.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+              No bookings found
+            </div>
+          ) : (
+            filteredBookings.map((booking) => {
+              const isPast = parseISO(booking.startTime) < new Date();
+              return (
+                <div
+                  key={booking.id}
+                  className={`bg-white rounded-lg shadow p-4 ${
+                    isPast ? "opacity-75" : ""
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {booking.boat.name}
+                      </div>
+                      <div className="text-xs text-gray-600 mt-0.5">
+                        {format(parseISO(booking.startTime), "MMM d, yyyy")}
+                      </div>
+                    </div>
+                    {getStatusBadge(booking.status)}
+                  </div>
+                  <div className="text-xs text-gray-600 mb-2">
+                    {format(parseISO(booking.startTime), "h:mm a")} -{" "}
+                    {format(parseISO(booking.endTime), "h:mm a")}
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                    <div className="text-xs">
+                      <div className="font-medium text-gray-900">
+                        {booking.user.name || "No name"}
+                      </div>
+                      <div className="text-gray-500">{booking.user.email}</div>
+                    </div>
+                    {booking.status === "CONFIRMED" && (
+                      <button
+                        onClick={() => handleCancelBooking(booking.id)}
+                        disabled={cancelling === booking.id}
+                        className="text-xs text-red-600 hover:text-red-900 font-medium disabled:opacity-50 px-2 py-1"
+                      >
+                        {cancelling === booking.id ? "Cancelling..." : "Cancel"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop: Table View */}
+        <div className="hidden sm:block bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">

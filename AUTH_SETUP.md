@@ -96,15 +96,39 @@ In Supabase Dashboard:
 
 1. Go to [Facebook Developers](https://developers.facebook.com/)
 2. Create a new app or select an existing one
-3. Add "Facebook Login" product
-4. In Facebook Login settings, add OAuth redirect URI: `https://<your-project-ref>.supabase.co/auth/v1/callback`
-5. Go to Settings > Basic to get your App ID and App Secret
+3. **Add "Facebook Login" product:**
+   - In the left sidebar, click "Add Product"
+   - Find "Facebook Login" and click "Set Up"
+4. **Configure Facebook Login Settings:**
+   - In the left sidebar, go to "Facebook Login" → "Settings"
+   - Under "Valid OAuth Redirect URIs", add:
+     - `https://zykspozosjiubmezhxfr.supabase.co/auth/v1/callback`
+     - For local testing: `http://localhost:3000/auth/callback`
+   - Click "Save Changes"
+5. **Configure App Domains:**
+   - In the left sidebar, go to "Settings" → "Basic"
+   - Scroll to "App Domains"
+   - Add: `zykspozosjiubmezhxfr.supabase.co`
+   - If using Render, also add: `your-app-name.onrender.com`
+   - Click "Save Changes"
+6. **Get App ID and Secret:**
+   - Still in "Settings" → "Basic"
+   - Copy your "App ID" and "App Secret"
+7. **Make app live (if needed):**
+   - Toggle the app status from "Development" to "Live" at the top of the page
+   - Or add test users in "Roles" → "Test Users"
 
 In Supabase Dashboard:
 1. Go to Authentication > Providers > Facebook
 2. Enable Facebook provider
 3. Paste your App ID (as Client ID) and App Secret (as Client Secret)
 4. Save configuration
+
+**Important Notes for Facebook:**
+- The OAuth redirect URI must be the **Supabase callback URL**, not your app's URL
+- App Domains should include `zykspozosjiubmezhxfr.supabase.co` (the Supabase domain)
+- Your app must be in "Live" mode OR the user must be added as a test user
+- Changes to Facebook settings can take a few minutes to propagate
 
 ## Step 2: Configure Site URL and Redirect URLs
 
