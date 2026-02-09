@@ -5,11 +5,12 @@ import { requireAdmin } from "@/lib/admin";
 // GET group details with users and boats
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireAdmin();
     const supabase = await getSupabaseClient();
+    const { id } = await params;
 
     const { data: group, error } = await supabase
       .from('Group')
@@ -22,7 +23,7 @@ export async function GET(
           boat:Boat(id, name)
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (error) {
