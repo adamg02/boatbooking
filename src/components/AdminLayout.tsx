@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SignOutButton from "@/components/SignOutButton";
+import UserProfile from "@/components/UserProfile";
 
 export default function AdminLayout({
   children,
@@ -47,6 +48,7 @@ export default function AdminLayout({
               </nav>
             </div>
             <div className="flex items-center space-x-4">
+              <UserProfile />
               <Link
                 href="/boats"
                 className="text-sm text-gray-600 hover:text-gray-900"

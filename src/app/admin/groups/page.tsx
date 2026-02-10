@@ -218,6 +218,22 @@ export default function AdminGroupsPage() {
     );
   };
 
+  const selectAllUsers = () => {
+    setSelectedUsers(users.map(user => user.id));
+  };
+
+  const deselectAllUsers = () => {
+    setSelectedUsers([]);
+  };
+
+  const selectAllBoats = () => {
+    setSelectedBoats(boats.map(boat => boat.id));
+  };
+
+  const deselectAllBoats = () => {
+    setSelectedBoats([]);
+  };
+
   const getBoatCount = (group: Group) => {
     return group.boatGroups?.[0]?.count || 0;
   };
@@ -363,9 +379,29 @@ export default function AdminGroupsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Add Users to Group
-                  </label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Add Users to Group
+                    </label>
+                    {users.length > 0 && (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={selectAllUsers}
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={deselectAllUsers}
+                          className="text-xs text-gray-600 hover:text-gray-800"
+                        >
+                          Deselect All
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
                     {users.length === 0 ? (
                       <div className="p-4 text-sm text-gray-500">No users available</div>
@@ -401,9 +437,29 @@ export default function AdminGroupsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Add Boats to Group
-                  </label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Add Boats to Group
+                    </label>
+                    {boats.length > 0 && (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={selectAllBoats}
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={deselectAllBoats}
+                          className="text-xs text-gray-600 hover:text-gray-800"
+                        >
+                          Deselect All
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
                     {boats.length === 0 ? (
                       <div className="p-4 text-sm text-gray-500">No boats available</div>
@@ -487,9 +543,29 @@ export default function AdminGroupsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Users in Group
-                  </label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Users in Group
+                    </label>
+                    {users.length > 0 && (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={selectAllUsers}
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={deselectAllUsers}
+                          className="text-xs text-gray-600 hover:text-gray-800"
+                        >
+                          Deselect All
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
                     {users.length === 0 ? (
                       <div className="p-4 text-sm text-gray-500">No users available</div>
@@ -525,9 +601,29 @@ export default function AdminGroupsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Boats in Group
-                  </label>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Boats in Group
+                    </label>
+                    {boats.length > 0 && (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={selectAllBoats}
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={deselectAllBoats}
+                          className="text-xs text-gray-600 hover:text-gray-800"
+                        >
+                          Deselect All
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
                     {boats.length === 0 ? (
                       <div className="p-4 text-sm text-gray-500">No boats available</div>
