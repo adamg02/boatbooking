@@ -7,11 +7,12 @@ export default async function BoatBookingPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams?: { date?: string; time?: string; fullDay?: string };
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ date?: string; time?: string; fullDay?: string }>;
 }) {
   const supabase = await getSupabaseClient();
-  const { id } = params;
+  const { id } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   
   const { data: { user } } = await supabase.auth.getUser();
   
@@ -107,9 +108,9 @@ export default async function BoatBookingPage({
           <BookingCalendar
             boat={boat}
             userId={user.id}
-            initialDate={searchParams?.date}
-            initialTime={searchParams?.time}
-            initialFullDay={searchParams?.fullDay === "1"}
+            initialDate={resolvedSearchParams?.date}
+            initialTime={resolvedSearchParams?.time}
+            initialFullDay={resolvedSearchParams?.fullDay === "1"}
           />
         )}
       </main>
