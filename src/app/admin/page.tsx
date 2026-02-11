@@ -42,7 +42,7 @@ export default async function AdminDashboard() {
     {
       title: "Active Bookings",
       value: bookingsResult.count || 0,
-      href: "/admin/bookings",
+      href: "/daily-bookings",
       icon: "📅",
       color: "bg-purple-500",
     },
@@ -107,7 +107,7 @@ export default async function AdminDashboard() {
               </p>
             </Link>
             <Link
-              href="/admin/bookings"
+              href="/daily-bookings"
               className="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-500 hover:bg-purple-50 transition-all"
             >
               <h4 className="font-semibold text-gray-900">View Bookings</h4>

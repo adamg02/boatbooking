@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SignOutButton from "@/components/SignOutButton";
@@ -11,22 +12,36 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   
   const navItems = [
     { href: "/admin", label: "Dashboard" },
     { href: "/admin/users", label: "Users" },
     { href: "/admin/boats", label: "Boats" },
     { href: "/admin/groups", label: "Groups" },
-    { href: "/admin/bookings", label: "Bookings" },
   ];
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-8">
+          <div className="flex flex-wrap items-center justify-between gap-4 py-4">
+            <div className="flex items-center gap-4 sm:gap-8">
+              <button
+                type="button"
+                className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-700 hover:bg-gray-100"
+                aria-label="Toggle navigation menu"
+                onClick={() => setIsMenuOpen((open) => !open)}
+              >
+                <span className="text-sm font-semibold" aria-hidden>
+                  {isMenuOpen ? "Close" : "Menu"}
+                </span>
+              </button>
               <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
               <nav className="hidden md:flex space-x-4">
                 {navItems.map((item) => {
@@ -58,26 +73,30 @@ export default function AdminLayout({
               <SignOutButton />
             </div>
           </div>
-          
+
           {/* Mobile Navigation */}
-          <nav className="md:hidden flex space-x-2 pb-4 overflow-x-auto">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap ${
-                    isActive
-                      ? "bg-blue-100 text-blue-700"
-                      : "text-gray-700 bg-white"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
+          {isMenuOpen && (
+            <nav className="md:hidden border-t border-gray-100 pb-4 pt-3">
+              <div className="grid gap-2">
+                {navItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`px-3 py-2 rounded-md text-sm font-medium ${
+                        isActive
+                          ? "bg-blue-100 text-blue-700"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </nav>
+          )}
         </div>
       </header>
 

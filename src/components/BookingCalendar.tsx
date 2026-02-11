@@ -217,21 +217,64 @@ export default function BookingCalendar({
       
       {/* Date selector */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {nextDays.map((date) => (
-          <button
-            key={date.toISOString()}
-            onClick={() => setSelectedDate(date)}
-            className={`px-4 py-3 rounded-lg min-w-[100px] transition-colors ${
-              format(selectedDate, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
-                ? "bg-blue-600 text-white"
-                : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
-            }`}
-          >
-            <div className="text-sm font-medium">{format(date, "EEE")}</div>
-            <div className="text-lg font-bold">{format(date, "d")}</div>
-            <div className="text-xs">{format(date, "MMM")}</div>
-          </button>
-        ))}
+        {(() => {
+          const items: JSX.Element[] = [];
+
+          const renderButton = (date: Date) => (
+            <button
+              key={date.toISOString()}
+              onClick={() => setSelectedDate(date)}
+              className={`px-4 py-3 rounded-lg min-w-[100px] transition-colors ${
+                format(selectedDate, "yyyy-MM-dd") === format(date, "yyyy-MM-dd")
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+              }`}
+            >
+              <div className="text-sm font-medium">{format(date, "EEE")}</div>
+              <div className="text-lg font-bold">{format(date, "d")}</div>
+              <div className="text-xs">{format(date, "MMM")}</div>
+            </button>
+          );
+
+          for (let index = 0; index < nextDays.length; index += 1) {
+            const date = nextDays[index];
+            const dayOfWeek = date.getDay();
+
+            if (dayOfWeek === 6) {
+              const sunday = nextDays[index + 1];
+              const hasSunday = sunday && sunday.getDay() === 0;
+              items.push(
+                <div
+                  key={`weekend-${date.toISOString()}`}
+                  className="flex gap-2 rounded-xl border border-rose-200/80 dark:border-rose-400/30 p-1"
+                >
+                  {renderButton(date)}
+                  {hasSunday ? renderButton(sunday) : null}
+                </div>
+              );
+              if (hasSunday) {
+                index += 1;
+              }
+              continue;
+            }
+
+            if (dayOfWeek === 0) {
+              items.push(
+                <div
+                  key={`weekend-${date.toISOString()}`}
+                  className="flex gap-2 rounded-xl border border-rose-200/80 dark:border-rose-400/30 p-1"
+                >
+                  {renderButton(date)}
+                </div>
+              );
+              continue;
+            }
+
+            items.push(renderButton(date));
+          }
+
+          return items;
+        })()}
       </div>
 
       <div
