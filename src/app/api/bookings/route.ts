@@ -63,15 +63,22 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check for conflicts
+    // Check for conflicts - fetch all confirmed bookings for this boat
     const { data: existingBookings } = await supabase
       .from('Booking')
       .select('*')
       .eq('boatId', boatId)
-      .eq('status', 'CONFIRMED')
-      .or(`startTime.lte.${start.toISOString()},endTime.gt.${start.toISOString()},startTime.lt.${end.toISOString()},endTime.gte.${end.toISOString()}`);
+      .eq('status', 'CONFIRMED');
 
-    if (existingBookings && existingBookings.length > 0) {
+    // Check if any existing booking overlaps with the requested time slot
+    // Two time ranges overlap if: slotStart < bookingEnd AND slotEnd > bookingStart
+    const hasConflict = existingBookings?.some((booking) => {
+      const bookingStart = new Date(booking.startTime);
+      const bookingEnd = new Date(booking.endTime);
+      return start.getTime() < bookingEnd.getTime() && end.getTime() > bookingStart.getTime();
+    });
+
+    if (hasConflict) {
       return NextResponse.json(
         { error: "Time slot already booked" },
         { status: 409 }

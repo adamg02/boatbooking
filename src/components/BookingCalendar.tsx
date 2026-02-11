@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { format, addDays, startOfDay, setHours, setMinutes } from "date-fns";
+import toast from "react-hot-toast";
 
 interface Booking {
   id: string;
@@ -22,9 +24,9 @@ interface BookingCalendarProps {
 }
 
 export default function BookingCalendar({ boat, userId }: BookingCalendarProps) {
+  const router = useRouter();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isBooking, setIsBooking] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Generate time slots (2-hour blocks from 6 AM to 8 PM)
   const generateTimeSlots = (date: Date) => {
@@ -46,10 +48,12 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
     return boat.bookings.some((booking) => {
       const bookingStart = new Date(booking.startTime);
       const bookingEnd = new Date(booking.endTime);
+      
+      // Two time ranges overlap if one starts before the other ends AND one ends after the other starts
+      // Using getTime() for reliable timestamp comparison
       return (
-        (slotStart >= bookingStart && slotStart < bookingEnd) ||
-        (slotEnd > bookingStart && slotEnd <= bookingEnd) ||
-        (slotStart <= bookingStart && slotEnd >= bookingEnd)
+        slotStart.getTime() < bookingEnd.getTime() && 
+        slotEnd.getTime() > bookingStart.getTime()
       );
     });
   };
@@ -72,7 +76,6 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
 
   const handleBooking = async (startTime: Date, endTime: Date) => {
     setIsBooking(true);
-    setMessage(null);
 
     try {
       const response = await fetch("/api/bookings", {
@@ -88,13 +91,13 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
       const data = await response.json();
 
       if (response.ok) {
-        setMessage({ type: "success", text: "Booking confirmed!" });
-        setTimeout(() => window.location.reload(), 1500);
+        toast.success("Booking confirmed!");
+        router.refresh();
       } else {
-        setMessage({ type: "error", text: data.error || "Booking failed" });
+        toast.error(data.error || "Booking failed");
       }
     } catch (error) {
-      setMessage({ type: "error", text: "An error occurred" });
+      toast.error("An error occurred");
     } finally {
       setIsBooking(false);
     }
@@ -102,7 +105,6 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
 
   const handleCancelBooking = async (bookingId: string) => {
     setIsBooking(true);
-    setMessage(null);
 
     try {
       const response = await fetch(`/api/bookings/${bookingId}`, {
@@ -110,14 +112,14 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
       });
 
       if (response.ok) {
-        setMessage({ type: "success", text: "Booking cancelled!" });
-        setTimeout(() => window.location.reload(), 1500);
+        toast.success("Booking cancelled!");
+        router.refresh();
       } else {
         const data = await response.json();
-        setMessage({ type: "error", text: data.error || "Cancellation failed" });
+        toast.error(data.error || "Cancellation failed");
       }
     } catch (error) {
-      setMessage({ type: "error", text: "An error occurred" });
+      toast.error("An error occurred");
     } finally {
       setIsBooking(false);
     }
@@ -147,19 +149,6 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
           </button>
         ))}
       </div>
-
-      {/* Message */}
-      {message && (
-        <div
-          className={`mb-4 p-3 rounded-lg ${
-            message.type === "success"
-              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-              : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
 
       {/* Time slots */}
       <h3 className="text-lg font-semibold mb-3">
