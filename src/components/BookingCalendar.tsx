@@ -28,12 +28,16 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isBooking, setIsBooking] = useState(false);
 
+  const BOOKING_WINDOW_DAYS = 28;
+  const DAY_START_HOUR = 6;
+  const DAY_END_HOUR = 20;
+
   // Generate time slots (2-hour blocks from 6 AM to 8 PM)
   const generateTimeSlots = (date: Date) => {
     const slots = [];
     const baseDate = startOfDay(date);
     
-    for (let hour = 6; hour < 20; hour += 2) {
+    for (let hour = DAY_START_HOUR; hour < DAY_END_HOUR; hour += 2) {
       const start = setMinutes(setHours(baseDate, hour), 0);
       const end = setMinutes(setHours(baseDate, hour + 2), 0);
       slots.push({ start, end });
@@ -44,7 +48,14 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
 
   const timeSlots = generateTimeSlots(selectedDate);
 
-  const isSlotBooked = (slotStart: Date, slotEnd: Date) => {
+  const getDayBounds = (date: Date) => {
+    const baseDate = startOfDay(date);
+    const start = setMinutes(setHours(baseDate, DAY_START_HOUR), 0);
+    const end = setMinutes(setHours(baseDate, DAY_END_HOUR), 0);
+    return { start, end };
+  };
+
+  const isRangeBooked = (rangeStart: Date, rangeEnd: Date) => {
     return boat.bookings.some((booking) => {
       const bookingStart = new Date(booking.startTime);
       const bookingEnd = new Date(booking.endTime);
@@ -52,26 +63,34 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
       // Two time ranges overlap if one starts before the other ends AND one ends after the other starts
       // Using getTime() for reliable timestamp comparison
       return (
-        slotStart.getTime() < bookingEnd.getTime() && 
-        slotEnd.getTime() > bookingStart.getTime()
+        rangeStart.getTime() < bookingEnd.getTime() && 
+        rangeEnd.getTime() > bookingStart.getTime()
       );
     });
+  };
+
+  const isSlotBooked = (slotStart: Date, slotEnd: Date) => {
+    return isRangeBooked(slotStart, slotEnd);
   };
 
   const isSlotPast = (slotStart: Date) => {
     return slotStart < new Date();
   };
 
-  const getUserBooking = (slotStart: Date, slotEnd: Date) => {
+  const getExactUserBooking = (rangeStart: Date, rangeEnd: Date) => {
     return boat.bookings.find((booking) => {
       const bookingStart = new Date(booking.startTime);
       const bookingEnd = new Date(booking.endTime);
       return (
         booking.userId === userId &&
-        bookingStart.getTime() === slotStart.getTime() &&
-        bookingEnd.getTime() === slotEnd.getTime()
+        bookingStart.getTime() === rangeStart.getTime() &&
+        bookingEnd.getTime() === rangeEnd.getTime()
       );
     });
+  };
+
+  const getUserBooking = (slotStart: Date, slotEnd: Date) => {
+    return getExactUserBooking(slotStart, slotEnd);
   };
 
   const handleBooking = async (startTime: Date, endTime: Date) => {
@@ -125,7 +144,11 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
     }
   };
 
-  const nextDays = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i));
+  const nextDays = Array.from({ length: BOOKING_WINDOW_DAYS }, (_, i) => addDays(new Date(), i));
+  const { start: dayStart, end: dayEnd } = getDayBounds(selectedDate);
+  const fullDayUserBooking = getExactUserBooking(dayStart, dayEnd);
+  const isFullDayBooked = isRangeBooked(dayStart, dayEnd);
+  const isFullDayPast = isSlotPast(dayStart);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -148,6 +171,44 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
             <div className="text-xs">{format(date, "MMM")}</div>
           </button>
         ))}
+      </div>
+
+      <div className="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold">Full Day Booking</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {format(dayStart, "h:mm a")} - {format(dayEnd, "h:mm a")}
+            </p>
+          </div>
+          {fullDayUserBooking ? (
+            <button
+              onClick={() => handleCancelBooking(fullDayUserBooking.id)}
+              disabled={isBooking}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Cancel Full Day
+            </button>
+          ) : (
+            <button
+              onClick={() => handleBooking(dayStart, dayEnd)}
+              disabled={isBooking || isFullDayPast || isFullDayBooked}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Book Full Day
+            </button>
+          )}
+        </div>
+        {!fullDayUserBooking && isFullDayBooked && (
+          <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+            Full day is already booked.
+          </p>
+        )}
+        {!fullDayUserBooking && !isFullDayBooked && isFullDayPast && (
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            Full day booking is only available for future dates.
+          </p>
+        )}
       </div>
 
       {/* Time slots */}

@@ -22,11 +22,15 @@ export async function POST(request: Request) {
     const start = new Date(startTime);
     const end = new Date(endTime);
 
-    // Validate 2-hour slot
-    const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-    if (duration !== 2) {
+    // Validate 2-hour slot or full-day booking
+    const durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+    const isTwoHour = durationHours === 2;
+    const isFullDay = durationHours === 14;
+    const hasWholeHourTimes = start.getMinutes() === 0 && end.getMinutes() === 0;
+
+    if ((!isTwoHour && !isFullDay) || !hasWholeHourTimes) {
       return NextResponse.json(
-        { error: "Booking must be exactly 2 hours" },
+        { error: "Booking must be a 2-hour slot or a full day" },
         { status: 400 }
       );
     }

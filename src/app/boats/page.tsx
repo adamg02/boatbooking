@@ -46,7 +46,9 @@ export default async function BoatsPage() {
   const boats = allBoats?.filter((boat: any) => {
     const boatGroupIds = boat.boatGroups?.map((bg: any) => bg.groupId) || [];
     return boatGroupIds.length === 0 || boatGroupIds.some((id: string) => userGroupIds.includes(id));
-  }) || [];
+  }).sort((a: any, b: any) =>
+    (a.name || "").localeCompare(b.name || "", undefined, { numeric: true, sensitivity: "base" })
+  ) || [];
 
   // Get user's next booking
   const { data: nextBooking } = await supabase
