@@ -7,11 +7,11 @@ export default async function BoatBookingPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
   searchParams?: { date?: string; time?: string; fullDay?: string };
 }) {
   const supabase = await getSupabaseClient();
-  const { id } = await params;
+  const { id } = params;
   
   const { data: { user } } = await supabase.auth.getUser();
   
