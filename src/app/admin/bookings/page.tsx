@@ -25,11 +25,16 @@ interface Booking {
   boat: Boat;
 }
 
+type SortField = "date" | "boat" | "user";
+type SortDirection = "asc" | "desc";
+
 export default function AdminBookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("upcoming");
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>("date");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   useEffect(() => {
     loadBookings();
@@ -71,17 +76,49 @@ export default function AdminBookingsPage() {
     }
   };
 
-  const filteredBookings = bookings.filter((booking) => {
-    const now = new Date();
-    const startTime = parseISO(booking.startTime);
-
-    if (filter === "upcoming") {
-      return startTime >= now && booking.status === "CONFIRMED";
-    } else if (filter === "past") {
-      return startTime < now || booking.status === "CANCELLED";
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
     }
-    return true;
-  });
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return "↕";
+    }
+    return sortDirection === "asc" ? "↑" : "↓";
+  };
+
+  const filteredBookings = bookings
+    .filter((booking) => {
+      const now = new Date();
+      const startTime = parseISO(booking.startTime);
+
+      if (filter === "upcoming") {
+        return startTime >= now && booking.status === "CONFIRMED";
+      } else if (filter === "past") {
+        return startTime < now || booking.status === "CANCELLED";
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+
+      if (sortField === "date") {
+        comparison = parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime();
+      } else if (sortField === "boat") {
+        comparison = a.boat.name.localeCompare(b.boat.name);
+      } else if (sortField === "user") {
+        const aName = a.user.name || a.user.email;
+        const bName = b.user.name || b.user.email;
+        comparison = aName.localeCompare(bName);
+      }
+
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
 
   const getStatusBadge = (status: string) => {
     if (status === "CONFIRMED") {
@@ -226,14 +263,32 @@ export default function AdminBookingsPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date & Time
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={() => handleSort("date")}
+                  >
+                    <div className="flex items-center gap-1">
+                      Date & Time
+                      <span className="text-gray-400">{getSortIcon("date")}</span>
+                    </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Boat
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={() => handleSort("boat")}
+                  >
+                    <div className="flex items-center gap-1">
+                      Boat
+                      <span className="text-gray-400">{getSortIcon("boat")}</span>
+                    </div>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    User
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+                    onClick={() => handleSort("user")}
+                  >
+                    <div className="flex items-center gap-1">
+                      User
+                      <span className="text-gray-400">{getSortIcon("user")}</span>
+                    </div>
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
