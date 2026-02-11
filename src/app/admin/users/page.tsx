@@ -14,6 +14,8 @@ interface User {
   email: string;
   provider?: string | null;
   createdAt: string;
+  isActive: boolean;
+  lastLogin: string | null;
   userGroups: Array<{
     group: Group;
   }>;
@@ -26,6 +28,7 @@ export default function AdminUsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [showInactive, setShowInactive] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -96,6 +99,36 @@ export default function AdminUsersPage() {
     );
   };
 
+  const handleToggleActive = async (userId: string, currentStatus: boolean) => {
+    const confirmMessage = currentStatus
+      ? "Are you sure you want to disable this user? They will not be able to log in or make bookings."
+      : "Enable this user account?";
+
+    if (!confirm(confirmMessage)) return;
+
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          isActive: !currentStatus,
+        }),
+      });
+
+      if (res.ok) {
+        await loadData();
+      } else {
+        alert("Failed to update user status");
+      }
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      alert("Failed to update user status");
+    }
+  };
+
+  const filteredUsers = showInactive ? users : users.filter(u => u.isActive);
+
   const getProviderIcon = (provider: string) => {
     switch (provider) {
       case 'google':
@@ -150,16 +183,37 @@ export default function AdminUsersPage() {
   return (
     <AdminLayout>
       <div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">User Management</h2>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">User Management</h2>
+          
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+              className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Show inactive users
+            </span>
+          </label>
+        </div>
 
         {/* Mobile: Card View */}
         <div className="sm:hidden space-y-3">
-          {users.map((user) => (
-            <div key={user.id} className="bg-white rounded-lg shadow p-4">
+          {filteredUsers.map((user) => (
+            <div key={user.id} className={`bg-white rounded-lg shadow p-4 ${!user.isActive ? 'opacity-60' : ''}`}>
               <div className="flex justify-between items-start mb-2">
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold text-gray-900 truncate">
-                    {user.name || "No name"}
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold text-gray-900 truncate">
+                      {user.name || "No name"}
+                    </div>
+                    {!user.isActive && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                        Disabled
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-gray-600 truncate mt-0.5">
                     {user.email}
@@ -200,8 +254,23 @@ export default function AdminUsersPage() {
                 </div>
               </div>
 
-              <div className="text-xs text-gray-500 pt-2 border-t border-gray-100">
-                Joined: {new Date(user.createdAt).toLocaleDateString()}
+              <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-100">
+                <div>
+                  <div>Joined: {new Date(user.createdAt).toLocaleDateString()}</div>
+                  {user.lastLogin && (
+                    <div className="mt-0.5">Last login: {new Date(user.lastLogin).toLocaleDateString()}</div>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleToggleActive(user.id, user.isActive)}
+                  className={`px-2 py-1 rounded text-xs font-medium ${
+                    user.isActive
+                      ? 'bg-red-50 text-red-700 hover:bg-red-100'
+                      : 'bg-green-50 text-green-700 hover:bg-green-100'
+                  }`}
+                >
+                  {user.isActive ? 'Disable' : 'Enable'}
+                </button>
               </div>
             </div>
           ))}
@@ -225,6 +294,12 @@ export default function AdminUsersPage() {
                   Groups
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Last Login
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Joined
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -233,8 +308,8 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {users.map((user) => (
-                <tr key={user.id}>
+              {filteredUsers.map((user) => (
+                <tr key={user.id} className={!user.isActive ? 'opacity-60' : ''}>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
                       {user.name || "No name"}
@@ -266,15 +341,39 @@ export default function AdminUsersPage() {
                       )}
                     </div>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {user.isActive ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                        Disabled
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                    {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                     <button
                       onClick={() => handleEditUser(user)}
-                      className="text-blue-600 hover:text-blue-900 font-medium"
+                      className="text-blue-600 hover:text-blue-900 font-medium mr-3"
                     >
                       Edit Groups
+                    </button>
+                    <button
+                      onClick={() => handleToggleActive(user.id, user.isActive)}
+                      className={`font-medium ${
+                        user.isActive
+                          ? 'text-red-600 hover:text-red-900'
+                          : 'text-green-600 hover:text-green-900'
+                      }`}
+                    >
+                      {user.isActive ? 'Disable' : 'Enable'}
                     </button>
                   </td>
                 </tr>
