@@ -249,7 +249,7 @@ export default function DailyBookingsPage() {
             </h3>
             <div className="flex gap-2 overflow-x-auto pb-2">
               {(() => {
-                const items: JSX.Element[] = [];
+                const items: React.ReactNode[] = [];
 
                 const renderButton = (date: Date) => (
                   <button
