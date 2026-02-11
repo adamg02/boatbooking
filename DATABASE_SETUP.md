@@ -112,6 +112,8 @@ To modify the schema:
 2. Run in Supabase SQL Editor
 3. Update SCHEMA.sql for future reference
 
+If you already created the schema, apply incremental updates with the provided SQL files. For example, to allow rebooking cancelled slots, run [BOOKING_UNIQUE_CONFIRMED.sql](BOOKING_UNIQUE_CONFIRMED.sql).
+
 Example:
 ```sql
 -- Add a capacity field to boats

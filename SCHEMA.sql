@@ -105,7 +105,6 @@ CREATE TABLE IF NOT EXISTS "Booking" (
     status "BookingStatus" DEFAULT 'CONFIRMED' NOT NULL,
     "createdAt" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
     "updatedAt" TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-    UNIQUE ("boatId", "startTime"),
     FOREIGN KEY ("userId") REFERENCES "User"(id) ON DELETE CASCADE,
     FOREIGN KEY ("boatId") REFERENCES "Boat"(id) ON DELETE CASCADE
 );
@@ -114,6 +113,10 @@ CREATE TABLE IF NOT EXISTS "Booking" (
 CREATE INDEX IF NOT EXISTS "Booking_userId_idx" ON "Booking"("userId");
 CREATE INDEX IF NOT EXISTS "Booking_boatId_idx" ON "Booking"("boatId");
 CREATE INDEX IF NOT EXISTS "Booking_startTime_idx" ON "Booking"("startTime");
+-- Enforce uniqueness only for active (confirmed) bookings
+CREATE UNIQUE INDEX IF NOT EXISTS "Booking_boatId_startTime_confirmed_key"
+    ON "Booking"("boatId", "startTime")
+    WHERE status = 'CONFIRMED';
 
 -- Enable Row Level Security (optional, recommended for production)
 -- ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;
