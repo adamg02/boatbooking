@@ -5,8 +5,10 @@ import Link from "next/link";
 
 export default async function BoatBookingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: { date?: string; time?: string; fullDay?: string };
 }) {
   const supabase = await getSupabaseClient();
   const { id } = await params;
@@ -102,7 +104,13 @@ export default async function BoatBookingPage({
             </p>
           </div>
         ) : (
-          <BookingCalendar boat={boat} userId={user.id} />
+          <BookingCalendar
+            boat={boat}
+            userId={user.id}
+            initialDate={searchParams?.date}
+            initialTime={searchParams?.time}
+            initialFullDay={searchParams?.fullDay === "1"}
+          />
         )}
       </main>
     </div>

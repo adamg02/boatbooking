@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, addDays, startOfDay, setHours, setMinutes } from "date-fns";
 import toast from "react-hot-toast";
@@ -21,12 +21,32 @@ interface Boat {
 interface BookingCalendarProps {
   boat: Boat;
   userId: string;
+  initialDate?: string;
+  initialTime?: string;
+  initialFullDay?: boolean;
 }
 
-export default function BookingCalendar({ boat, userId }: BookingCalendarProps) {
+export default function BookingCalendar({
+  boat,
+  userId,
+  initialDate,
+  initialTime,
+  initialFullDay,
+}: BookingCalendarProps) {
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(() => {
+    if (!initialDate) {
+      return new Date();
+    }
+
+    const initialDateTime = initialTime
+      ? new Date(`${initialDate}T${initialTime}:00`)
+      : new Date(`${initialDate}T00:00:00`);
+
+    return isNaN(initialDateTime.getTime()) ? new Date() : initialDateTime;
+  });
   const [isBooking, setIsBooking] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   const BOOKING_WINDOW_DAYS = 28;
   const DAY_START_HOUR = 6;
@@ -75,6 +95,10 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
 
   const isSlotPast = (slotStart: Date) => {
     return slotStart < new Date();
+  };
+
+  const formatSlotId = (date: Date) => {
+    return format(date, "yyyy-MM-dd-HH-mm");
   };
 
   const getExactUserBooking = (rangeStart: Date, rangeEnd: Date) => {
@@ -150,6 +174,43 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
   const isFullDayBooked = isRangeBooked(dayStart, dayEnd);
   const isFullDayPast = isSlotPast(dayStart);
 
+  useEffect(() => {
+    if (!initialDate) {
+      return;
+    }
+
+    if (format(selectedDate, "yyyy-MM-dd") !== initialDate) {
+      return;
+    }
+
+    let targetId: string | null = null;
+
+    if (initialFullDay) {
+      targetId = `full-day-${initialDate}`;
+    } else if (initialTime) {
+      const initialDateTime = new Date(`${initialDate}T${initialTime}:00`);
+      if (!isNaN(initialDateTime.getTime())) {
+        targetId = `slot-${formatSlotId(initialDateTime)}`;
+      }
+    }
+
+    if (!targetId) {
+      return;
+    }
+
+    const target = document.getElementById(targetId);
+    if (target) {
+      setHighlightId(targetId);
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      const timeout = window.setTimeout(() => {
+        setHighlightId((current) => (current === targetId ? null : current));
+      }, 2500);
+      return () => window.clearTimeout(timeout);
+    }
+  }, [initialDate, initialTime, initialFullDay, selectedDate]);
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <h2 className="text-xl font-bold mb-4">Select a Date</h2>
@@ -173,7 +234,14 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
         ))}
       </div>
 
-      <div className="mb-6 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+      <div
+        className={`mb-6 rounded-lg border border-gray-200 dark:border-gray-700 p-4 ${
+          highlightId === `full-day-${format(dayStart, "yyyy-MM-dd")}`
+            ? "animate-pulse ring-2 ring-blue-300"
+            : ""
+        }`}
+        id={`full-day-${format(dayStart, "yyyy-MM-dd")}`}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h3 className="text-lg font-semibold">Full Day Booking</h3>
@@ -225,6 +293,7 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
           return (
             <div
               key={slot.start.toISOString()}
+              id={`slot-${formatSlotId(slot.start)}`}
               className={`flex items-center justify-between p-4 rounded-lg border-2 ${
                 userBooking
                   ? "border-green-500 bg-green-50 dark:bg-green-900/20"
@@ -233,6 +302,10 @@ export default function BookingCalendar({ boat, userId }: BookingCalendarProps) 
                   : isPast
                   ? "border-gray-200 bg-gray-50 dark:bg-gray-900"
                   : "border-blue-200 bg-blue-50 dark:bg-blue-900/20"
+              } ${
+                highlightId === `slot-${formatSlotId(slot.start)}`
+                  ? "animate-pulse ring-2 ring-blue-300"
+                  : ""
               }`}
             >
               <div>
