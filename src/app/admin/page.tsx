@@ -19,14 +19,14 @@ export default async function AdminDashboard() {
   
   // Get dashboard stats
   const [usersResult, boatsResult, bookingsResult] = await Promise.all([
-    supabase.from('User').select('id', { count: 'exact', head: true }),
+    supabase.from('User').select('id', { count: 'exact', head: true }).eq('isActive', true),
     supabase.from('Boat').select('id', { count: 'exact', head: true }),
     supabase.from('Booking').select('id', { count: 'exact', head: true }).eq('status', 'CONFIRMED'),
   ]);
 
   const stats = [
     {
-      title: "Total Users",
+      title: "Active Users",
       value: usersResult.count || 0,
       href: "/admin/users",
       icon: "👥",
