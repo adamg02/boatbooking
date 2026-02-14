@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { addDays, format, parseISO } from "date-fns";
-import SignOutButton from "@/components/SignOutButton";
 import { getSupabaseClientComponent } from "@/lib/supabase-client";
+import MobileNavBar from "@/components/MobileNavBar";
 
 interface User {
   id: string;
@@ -195,37 +194,11 @@ export default function DailyBookingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="bg-white dark:bg-gray-800 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                Daily Bookings
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {format(selectedDate, "MMM d, yyyy")}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {isAdmin && (
-                <Link
-                  href="/admin"
-                  className="text-xs sm:text-sm bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
-                >
-                  Admin
-                </Link>
-              )}
-              <Link
-                href="/boats"
-                className="text-xs sm:text-sm bg-gray-200 text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition-colors whitespace-nowrap"
-              >
-                Back to Boats
-              </Link>
-              <SignOutButton />
-            </div>
-          </div>
-        </div>
-      </header>
+      <MobileNavBar 
+        title="Daily Bookings" 
+        subtitle={format(selectedDate, "MMM d, yyyy")}
+        isAdmin={isAdmin}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">

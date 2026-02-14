@@ -1,10 +1,10 @@
 import { getSupabaseClient } from "@/lib/supabase";
 import { redirect } from "next/navigation";
 import BoatCard from "@/components/BoatCard";
-import SignOutButton from "@/components/SignOutButton";
 import { isAdmin } from "@/lib/admin";
-import Link from "next/link";
 import { format } from "date-fns";
+import MobileNavBar from "@/components/MobileNavBar";
+import Link from "next/link";
 
 export default async function BoatsPage() {
   const supabase = await getSupabaseClient();
@@ -73,37 +73,11 @@ export default async function BoatsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="bg-white dark:bg-gray-800 shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold">Available Boats</h1>
-              {userData?.name && (
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Welcome, {userData.name}
-                </p>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Link
-                href="/daily-bookings"
-                className="text-xs sm:text-sm bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-              >
-                Daily Bookings
-              </Link>
-              {adminCheck && (
-                <Link
-                  href="/admin"
-                  className="text-xs sm:text-sm bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition-colors whitespace-nowrap"
-                >
-                  Admin
-                </Link>
-              )}
-              <SignOutButton />
-            </div>
-          </div>
-        </div>
-      </header>
+      <MobileNavBar 
+        title="Available Boats" 
+        subtitle={userData?.name ? `Welcome, ${userData.name}` : undefined}
+        isAdmin={adminCheck}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {nextBooking && (
