@@ -4,6 +4,7 @@ import BoatCard from "@/components/BoatCard";
 import { isAdmin } from "@/lib/admin";
 import { format } from "date-fns";
 import MobileNavBar from "@/components/MobileNavBar";
+import Link from "next/link";
 
 export default async function BoatsPage() {
   const supabase = await getSupabaseClient();
