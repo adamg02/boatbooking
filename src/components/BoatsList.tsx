@@ -27,26 +27,30 @@ function getBoatType(boat: Boat): BoatFilterType {
   }
 
   // Fallback: determine from naming conventions
+  // Check for recreational boats first (they have 'xR' or ' R ' in name)
+  // This pattern matches boats like "1xR Wintec Explore 700" and "2xR Wintec Explorer STN 703"
   const isRecreational = boat.name.includes('xR ') || boat.name.includes('R ') || boat.name.toLowerCase().includes('recreational');
   
   if (isRecreational) {
     return 'recreational';
   }
 
+  // Classify by capacity
+  // Note: Capacity includes cox where applicable
   switch (boat.capacity) {
     case 1:
-      return 'single';
+      return 'single';  // 1x (single scull)
     case 2:
-      return 'double';
+      return 'double';  // 2x (double scull) or 2- (pair)
     case 4:
     case 5:
-      return 'four';
+      return 'four';    // 4- (coxless four), 4x (quad), 4+ (coxed four/quad, capacity 5 includes cox)
     case 9:
-      return 'eight';
+      return 'eight';   // 8+ (eight with cox, capacity 9 = 8 rowers + 1 cox)
     case 8:
-      return 'other'; // launches
+      return 'other';   // Launches (used for coaching/support, not rowing boats)
     default:
-      return 'other';
+      return 'other';   // Any uncategorized boats
   }
 }
 
