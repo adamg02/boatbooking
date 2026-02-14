@@ -1,6 +1,6 @@
 import { getSupabaseClient } from "@/lib/supabase";
 import { redirect } from "next/navigation";
-import BoatCard from "@/components/BoatCard";
+import BoatsList from "@/components/BoatsList";
 import { isAdmin } from "@/lib/admin";
 import { format } from "date-fns";
 import MobileNavBar from "@/components/MobileNavBar";
@@ -39,7 +39,7 @@ export default async function BoatsPage() {
   // 2. Have groups that the user belongs to
   const { data: allBoats } = await supabase
     .from('Boat')
-    .select('*, boatGroups:BoatGroup(groupId, group:Group(*))')
+    .select('*, boatGroups:BoatGroup(groupId, group:Group(*)), capacity, boatType')
     .eq('isActive', true);
 
   // Filter boats based on permissions
@@ -114,19 +114,7 @@ export default async function BoatsPage() {
           </Link>
         )}
 
-        {boats.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-gray-400">
-              No boats available for booking at this time.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {boats.map((boat) => (
-              <BoatCard key={boat.id} boat={boat} />
-            ))}
-          </div>
-        )}
+        <BoatsList boats={boats} />
       </main>
     </div>
   );
