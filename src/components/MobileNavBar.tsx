@@ -6,13 +6,12 @@ import { usePathname } from "next/navigation";
 import SignOutButton from "@/components/SignOutButton";
 
 interface NavBarProps {
-  userName?: string | null;
   isAdmin?: boolean;
   title: string;
   subtitle?: string;
 }
 
-export default function MobileNavBar({ userName, isAdmin, title, subtitle }: NavBarProps) {
+export default function MobileNavBar({ isAdmin, title, subtitle }: NavBarProps) {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -112,11 +111,6 @@ export default function MobileNavBar({ userName, isAdmin, title, subtitle }: Nav
         {isMenuOpen && (
           <nav className="md:hidden mobile-nav-menu border-t border-gray-200 dark:border-gray-700 mt-4 pt-4">
             <div className="flex flex-col space-y-2">
-              {userName && (
-                <div className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 mb-2">
-                  Welcome, {userName}
-                </div>
-              )}
               {pathname !== "/boats" && (
                 <Link
                   href="/boats"

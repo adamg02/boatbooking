@@ -35,7 +35,6 @@ export default function DailyBookingsPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [userName, setUserName] = useState<string | null>(null);
   const supabase = getSupabaseClientComponent();
 
   const BOOKING_WINDOW_DAYS = 28;
@@ -60,17 +59,6 @@ export default function DailyBookingsPage() {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
-      
-      // Fetch user name from User table
-      if (user?.id) {
-        const { data: userData } = await supabase
-          .from('User')
-          .select('name')
-          .eq('id', user.id)
-          .single();
-        
-        setUserName(userData?.name || null);
-      }
     };
 
     fetchUser();
@@ -210,7 +198,6 @@ export default function DailyBookingsPage() {
         title="Daily Bookings" 
         subtitle={format(selectedDate, "MMM d, yyyy")}
         isAdmin={isAdmin}
-        userName={userName}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -77,7 +77,6 @@ export default async function BoatsPage() {
         title="Available Boats" 
         subtitle={userData?.name ? `Welcome, ${userData.name}` : undefined}
         isAdmin={adminCheck}
-        userName={userData?.name}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
