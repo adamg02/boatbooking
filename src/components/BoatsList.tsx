@@ -88,7 +88,11 @@ export default function BoatsList({ boats }: BoatsListProps) {
 
   return (
     <>
-      <BoatFilter onFilterChange={setSelectedFilter} boatCounts={boatCounts} />
+      <BoatFilter 
+        selectedFilter={selectedFilter}
+        onFilterChange={setSelectedFilter} 
+        boatCounts={boatCounts} 
+      />
       
       {filteredBoats.length === 0 ? (
         <div className="text-center py-12">
