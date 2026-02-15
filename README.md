@@ -9,6 +9,7 @@ A mobile-first web application for booking rowing boats with social authenticati
 - 👥 **User Groups & Permissions**: Control which users can book specific boats
 - 📱 **Mobile-First Design**: Responsive interface optimized for mobile devices
 - ⏰ **Real-time Availability**: See available slots and book instantly
+- 📊 **Google Analytics**: Optional analytics tracking with configurable GA4 measurement ID
 
 ## Tech Stack
 
@@ -18,6 +19,7 @@ A mobile-first web application for booking rowing boats with social authenticati
 - **Authentication**: Supabase Auth with OAuth
 - **Database**: Supabase (PostgreSQL) with Supabase JS Client
 - **Date Handling**: date-fns
+- **Analytics**: Google Analytics (via @next/third-parties)
 
 ## Prerequisites
 
@@ -47,6 +49,10 @@ Create a `.env` file in the root directory:
 # Supabase - Get from Project Settings -> API
 NEXT_PUBLIC_SUPABASE_URL="https://[YOUR-PROJECT-REF].supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
+
+# Google Analytics (Optional)
+# Get your GA4 Measurement ID from Google Analytics (e.g., G-XXXXXXXXXX)
+NEXT_PUBLIC_GA_MEASUREMENT_ID="G-XXXXXXXXXX"
 ```
 
 **That's it!** No OAuth provider credentials needed in your app - they're managed in the Supabase Dashboard.
