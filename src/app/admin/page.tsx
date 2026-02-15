@@ -18,10 +18,11 @@ export default async function AdminDashboard() {
   }
   
   // Get dashboard stats
+  const now = new Date().toISOString();
   const [usersResult, boatsResult, bookingsResult] = await Promise.all([
     supabase.from('User').select('id', { count: 'exact', head: true }).eq('isActive', true),
     supabase.from('Boat').select('id', { count: 'exact', head: true }),
-    supabase.from('Booking').select('id', { count: 'exact', head: true }).eq('status', 'CONFIRMED'),
+    supabase.from('Booking').select('id', { count: 'exact', head: true }).eq('status', 'CONFIRMED').gte('endTime', now),
   ]);
 
   const stats = [
