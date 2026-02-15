@@ -39,7 +39,7 @@ export default async function BoatsPage() {
   // 2. Have groups that the user belongs to
   const { data: allBoats } = await supabase
     .from('Boat')
-    .select('*, boatGroups:BoatGroup(groupId, group:Group(*)), capacity, boatType')
+    .select('*, boatGroups:BoatGroup(groupId, group:Group(*))')
     .eq('isActive', true);
 
   // Filter boats based on permissions

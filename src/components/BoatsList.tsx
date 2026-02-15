@@ -11,7 +11,7 @@ interface Boat {
   name: string;
   description: string | null;
   imageUrl: string | null;
-  capacity: number;
+  capacity?: number | null;
   boatType?: string | null;
 }
 
@@ -37,6 +37,11 @@ function getBoatType(boat: Boat): BoatFilterType {
 
   // Classify by capacity
   // Note: Capacity includes cox where applicable
+  // If capacity is missing/undefined, return 'other' as fallback
+  if (boat.capacity === undefined || boat.capacity === null) {
+    return 'other';
+  }
+
   switch (boat.capacity) {
     case 1:
       return 'single';  // 1x (single scull)
