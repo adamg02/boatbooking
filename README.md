@@ -57,7 +57,16 @@ NEXT_PUBLIC_GA_MEASUREMENT_ID="G-XXXXXXXXXX"
 
 **That's it!** No OAuth provider credentials needed in your app - they're managed in the Supabase Dashboard.
 
-### 4. Configure Authentication
+### 4. Configure Google Analytics (Optional)
+
+To enable analytics tracking, see detailed instructions in [ANALYTICS_SETUP.md](./ANALYTICS_SETUP.md).
+
+Quick summary:
+1. Create a Google Analytics 4 property
+2. Get your Measurement ID (G-XXXXXXXXXX)
+3. Add `NEXT_PUBLIC_GA_MEASUREMENT_ID` to your `.env` file
+
+### 5. Configure Authentication
 
 Set up OAuth providers in Supabase Dashboard. See detailed instructions in [AUTH_SETUP.md](./AUTH_SETUP.md).
 
@@ -67,7 +76,7 @@ Quick summary:
 3. Add your OAuth credentials from each provider
 4. Configure redirect URLs
 
-### 5. Create Database Schema
+### 6. Create Database Schema
 
 Use the Supabase SQL Editor to create the necessary tables:
 
@@ -76,7 +85,7 @@ Use the Supabase SQL Editor to create the necessary tables:
 3. Create a new query and paste the schema from [SCHEMA.sql](SCHEMA.sql)
 4. Click **Run** to create all tables
 
-### 6. Seed Database (Optional)
+### 7. Seed Database (Optional)
 
 Add sample data using the Supabase SQL Editor:
 
@@ -87,7 +96,7 @@ Add sample data using the Supabase SQL Editor:
 
 Alternatively, add data manually through the **Table Editor** in the Supabase Dashboard.
 
-### 7. Run Development Server
+### 8. Run Development Server
 
 ```bash
 npm run dev
