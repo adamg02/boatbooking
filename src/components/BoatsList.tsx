@@ -38,7 +38,7 @@ function getBoatType(boat: Boat): BoatFilterType {
   // Classify by capacity
   // Note: Capacity includes cox where applicable
   // If capacity is missing/undefined, return 'other' as fallback
-  if (boat.capacity === undefined || boat.capacity === null) {
+  if (boat.capacity == null) {
     return 'other';
   }
 
