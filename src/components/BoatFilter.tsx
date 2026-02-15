@@ -14,13 +14,14 @@ const FILTER_STORAGE_KEY = 'boat-filter-selection';
 
 export default function BoatFilter({ selectedFilter, onFilterChange, boatCounts }: BoatFilterProps) {
   // Load filter from localStorage on mount
+  // This intentionally runs only once on mount to restore user's last selected filter
   useEffect(() => {
     const savedFilter = localStorage.getItem(FILTER_STORAGE_KEY) as BoatFilterType;
     if (savedFilter && ['all', 'single', 'double', 'four', 'eight', 'recreational', 'other'].includes(savedFilter)) {
       onFilterChange(savedFilter);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run on mount
+  }, []); // Only run on mount - localStorage takes precedence over initial prop value
 
   const handleFilterClick = (filter: BoatFilterType) => {
     localStorage.setItem(FILTER_STORAGE_KEY, filter);
