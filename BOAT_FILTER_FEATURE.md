@@ -16,26 +16,48 @@ This feature adds a filter bar at the top of the boat booking page to allow user
 ## Implementation
 
 ### Database Changes
-Run the migration script to add the `boatType` column:
-```bash
-psql -d your_database < ADD_BOAT_TYPE_COLUMN.sql
-```
 
-This will:
-1. Add a `boatType` column to the `Boat` table
+**Optional but Recommended**: Run these migration scripts for optimal filtering:
+
+1. **Add capacity column** (if not already present):
+   ```bash
+   psql -d your_database < ADD_BOATS_BATCH.sql
+   ```
+
+2. **Add boatType column**:
+   ```bash
+   psql -d your_database < ADD_BOAT_TYPE_COLUMN.sql
+   ```
+
+These migrations will:
+1. Add `capacity` and `boatType` columns to the `Boat` table
 2. Automatically classify existing boats based on their names and capacity
 3. Display a summary of boat counts by type
 
+**Note**: The filter feature works even without these migrations, but will classify all boats as "other" type. Running the migrations provides more accurate categorization.
+
 ### Boat Type Classification Logic
 
-Boats are classified in the following priority order:
+The code uses a three-tier classification system:
 
-1. **Recreational**: Names containing 'xR', ' R ', or 'recreational' (case insensitive)
-2. **Single**: Capacity = 1 (single sculls)
-3. **Double**: Capacity = 2 (double sculls, pairs)
-4. **Four**: Capacity = 4 or 5 (coxless/coxed fours and quads)
-5. **Eight**: Capacity = 9 (8 rowers + 1 cox)
-6. **Other**: Capacity = 8 (launches) or any uncategorized boats
+**Tier 1: Database Value (Preferred)**
+- If `boatType` is set in the database, it's used directly
+
+**Tier 2: Name-Based Classification (Fallback)**
+- **Recreational**: Names containing 'xR ', 'R ', or 'recreational' (case insensitive)
+
+**Tier 3: Capacity-Based Classification (Fallback)**
+- **Single**: Capacity = 1 (single sculls)
+- **Double**: Capacity = 2 (double sculls, pairs)
+- **Four**: Capacity = 4 or 5 (coxless/coxed fours and quads)
+- **Eight**: Capacity = 9 (8 rowers + 1 cox)
+- **Other**: Capacity = 8 (launches), missing capacity, or any uncategorized boats
+
+**Behavior Without Migrations**:
+- If `capacity` and `boatType` columns don't exist, boats will be classified as:
+  - "recreational" if name matches patterns
+  - "other" for all other boats
+- The "All" filter will always show all boats regardless of classification
 
 ### Components
 
