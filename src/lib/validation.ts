@@ -10,6 +10,13 @@ export const createBookingSchema = z.object({
   boatId: z.string().uuid('Invalid boat ID format'),
   startTime: z.string().datetime('Invalid start time format'),
   endTime: z.string().datetime('Invalid end time format'),
+}).refine((data) => {
+  const start = new Date(data.startTime);
+  const end = new Date(data.endTime);
+  return end > start;
+}, {
+  message: 'End time must be after start time',
+  path: ['endTime'],
 });
 
 export const deleteBookingSchema = z.object({

@@ -9,13 +9,17 @@ This document summarizes the security review conducted on the Boat Booking appli
 ### 1. **Dependency Vulnerabilities** ✅ FIXED
 **Severity**: Critical  
 **Issue**: Next.js version 15.1.6 had multiple critical vulnerabilities including:
-- Information exposure in dev server
+- Information exposure in dev server (CVE-2025-66478)
 - DoS via cache poisoning
 - SSRF via improper middleware redirect handling
 - Authorization bypass in middleware
 - RCE in React flight protocol
+- Server Actions Source Code Exposure
+- And 6 more critical vulnerabilities
 
-**Fix**: Updated Next.js from 15.1.6 to 15.5.12 to patch all known vulnerabilities.
+**Fix**: Updated Next.js from 15.1.6 to 15.5.12 to patch all 11 known critical vulnerabilities.
+
+**Verification**: `npm audit` now shows 0 vulnerabilities.
 
 ### 2. **Input Validation** ✅ FIXED
 **Severity**: High  
@@ -29,6 +33,7 @@ This document summarizes the security review conducted on the Boat Booking appli
   - Admin user management
   - Query parameters (dates, UUIDs)
 - All inputs now validated for type, format, and constraints
+- Added cross-field validation (e.g., endTime must be after startTime)
 
 ### 3. **XSS in Email Notifications** ✅ FIXED
 **Severity**: Medium  
