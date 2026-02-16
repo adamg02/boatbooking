@@ -135,12 +135,6 @@ export default function AdminLayout({
             </div>
             <div className="flex items-center space-x-4">
               <UserProfile isAdmin={isAdmin} />
-              <Link
-                href="/boats"
-                className="text-sm text-gray-600 hover:text-gray-900"
-              >
-                Back to Boats
-              </Link>
               <SignOutButton />
             </div>
           </div>
@@ -165,6 +159,19 @@ export default function AdminLayout({
                     </Link>
                   );
                 })}
+                <hr className="my-2 border-gray-200" />
+                <Link
+                  href="/boats"
+                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  Book a Boat
+                </Link>
+                <Link
+                  href="/daily-bookings"
+                  className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
+                >
+                  Boat Bookings
+                </Link>
               </div>
             </nav>
           )}

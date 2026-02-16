@@ -80,7 +80,7 @@ export default function MobileNavBar({ isAdmin, title, subtitle }: NavBarProps) 
                 href="/boats"
                 className="text-xs sm:text-sm bg-gray-200 text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600 transition-colors whitespace-nowrap"
               >
-                Boats
+                Book a Boat
               </Link>
             )}
             {pathname !== "/daily-bookings" && (
@@ -88,7 +88,7 @@ export default function MobileNavBar({ isAdmin, title, subtitle }: NavBarProps) 
                 href="/daily-bookings"
                 className="text-xs sm:text-sm bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
               >
-                Daily Bookings
+                Boat Bookings
               </Link>
             )}
             {isAdmin && (
@@ -118,7 +118,7 @@ export default function MobileNavBar({ isAdmin, title, subtitle }: NavBarProps) 
                   href="/boats"
                   className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Boats
+                  Book a Boat
                 </Link>
               )}
               {pathname !== "/daily-bookings" && (
@@ -126,7 +126,7 @@ export default function MobileNavBar({ isAdmin, title, subtitle }: NavBarProps) 
                   href="/daily-bookings"
                   className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Daily Bookings
+                  Boat Bookings
                 </Link>
               )}
               {isAdmin && (
