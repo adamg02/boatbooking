@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { getSupabaseClientComponent } from "@/lib/supabase-client";
 
-export default function UserProfile() {
+interface UserProfileProps {
+  isAdmin?: boolean;
+  className?: string;
+}
+
+export default function UserProfile({ isAdmin, className }: UserProfileProps) {
   const [userName, setUserName] = useState<string | null>(null);
   const supabase = getSupabaseClientComponent();
 
@@ -29,8 +34,8 @@ export default function UserProfile() {
   }
 
   return (
-    <div className="text-sm text-gray-600 hidden sm:block">
-      {userName}
+    <div className={className || "text-sm text-gray-600 dark:text-gray-400 hidden sm:block"}>
+      {userName}{isAdmin && ' (Admin)'}
     </div>
   );
 }
