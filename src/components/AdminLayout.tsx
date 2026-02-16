@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SignOutButton from "@/components/SignOutButton";
 import UserProfile from "@/components/UserProfile";
 import { getSupabaseClientComponent } from "@/lib/supabase-client";
+
+interface UserGroupData {
+  group: {
+    name: string;
+  } | null;
+}
 
 export default function AdminLayout({
   children,
@@ -16,6 +22,8 @@ export default function AdminLayout({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const supabase = getSupabaseClientComponent();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
   
   const navItems = [
     { href: "/admin", label: "Dashboard" },
@@ -32,7 +40,13 @@ export default function AdminLayout({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (isMenuOpen && !target.closest('.mobile-nav-menu') && !target.closest('.mobile-nav-toggle')) {
+      if (
+        isMenuOpen &&
+        menuRef.current &&
+        toggleRef.current &&
+        !menuRef.current.contains(target) &&
+        !toggleRef.current.contains(target)
+      ) {
         setIsMenuOpen(false);
       }
     };
@@ -52,7 +66,13 @@ export default function AdminLayout({
           .select('group:Group(name)')
           .eq('userId', user.id);
         
-        const adminCheck = data?.some((ug: any) => ug.group?.name === 'Admin') || false;
+        const adminCheck = data?.some((ug) => {
+          const group = ug.group as { name: string } | { name: string }[] | null;
+          if (Array.isArray(group)) {
+            return group.some(g => g.name === 'Admin');
+          }
+          return group?.name === 'Admin';
+        }) || false;
         setIsAdmin(adminCheck);
       }
     };
@@ -68,8 +88,9 @@ export default function AdminLayout({
           <div className="flex flex-wrap items-center justify-between gap-4 py-4">
             <div className="flex items-center gap-4 sm:gap-8">
               <button
+                ref={toggleRef}
                 type="button"
-                className="md:hidden mobile-nav-toggle inline-flex items-center justify-center rounded-md p-2 text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+                className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
                 aria-label="Toggle navigation menu"
                 aria-expanded={isMenuOpen}
                 onClick={() => setIsMenuOpen((open) => !open)}
@@ -119,7 +140,7 @@ export default function AdminLayout({
 
           {/* Mobile Navigation */}
           {isMenuOpen && (
-            <nav className="md:hidden mobile-nav-menu border-t border-gray-100 pb-4 pt-3">
+            <nav ref={menuRef} className="md:hidden border-t border-gray-100 pb-4 pt-3">
               <div className="grid gap-2">
                 {navItems.map((item) => {
                   const isActive = pathname === item.href;

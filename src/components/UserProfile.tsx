@@ -35,7 +35,7 @@ export default function UserProfile({ isAdmin, className }: UserProfileProps) {
 
   return (
     <div className={className || "text-sm text-gray-600 dark:text-gray-400 hidden sm:block"}>
-      {userName}{isAdmin && ' (Admin)'}
+      {userName} {isAdmin && '(Admin)'}
     </div>
   );
 }
