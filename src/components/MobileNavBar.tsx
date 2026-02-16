@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SignOutButton from "@/components/SignOutButton";
+import UserProfile from "@/components/UserProfile";
 
 interface NavBarProps {
   isAdmin?: boolean;
@@ -98,6 +99,7 @@ export default function MobileNavBar({ isAdmin, title, subtitle }: NavBarProps) 
                 Admin
               </Link>
             )}
+            <UserProfile isAdmin={isAdmin} />
             <SignOutButton />
           </div>
 
