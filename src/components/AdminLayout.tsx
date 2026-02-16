@@ -61,13 +61,20 @@ export default function AdminLayout({
     const checkAdmin = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('UserGroup')
           .select('group:Group(name)')
           .eq('userId', user.id);
         
+        if (error) {
+          console.error('Failed to check admin status:', error);
+          setIsAdmin(false);
+          return;
+        }
+        
         const adminCheck = data?.some((ug) => {
           const group = ug.group as { name: string } | { name: string }[] | null;
+          // Handle both single object and array cases due to Supabase join behavior
           if (Array.isArray(group)) {
             return group.some(g => g.name === 'Admin');
           }
