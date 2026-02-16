@@ -1,5 +1,6 @@
 import { getSupabaseClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { safeValidateRequest, uuidQuerySchema } from "@/lib/validation";
 
 export async function DELETE(
   request: Request,
@@ -12,6 +13,18 @@ export async function DELETE(
     
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Validate UUID format
+    const validation = safeValidateRequest(uuidQuerySchema, { id });
+    if (!validation.success) {
+      return NextResponse.json(
+        { 
+          error: "Invalid booking ID format",
+          details: validation.error.errors.map(e => e.message)
+        },
+        { status: 400 }
+      );
     }
 
     // Get booking to verify ownership

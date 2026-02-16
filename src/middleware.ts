@@ -39,26 +39,32 @@ export async function middleware(request: NextRequest) {
 
   // If user is logged in, check if they're active
   if (user) {
-    const { data: userData } = await supabase
-      .from('User')
-      .select('isActive, lastLogin')
-      .eq('id', user.id)
-      .single()
-
-    // Update last login timestamp
-    if (userData) {
-      await supabase
+    try {
+      const { data: userData } = await supabase
         .from('User')
-        .update({ lastLogin: new Date().toISOString() })
+        .select('isActive, lastLogin')
         .eq('id', user.id)
-    }
+        .single()
 
-    // If user is inactive, sign them out and redirect to sign-in
-    if (userData && userData.isActive === false) {
-      await supabase.auth.signOut()
-      const redirectUrl = new URL('/auth/signin', request.url)
-      redirectUrl.searchParams.set('error', 'account_disabled')
-      return NextResponse.redirect(redirectUrl)
+      // Update last login timestamp
+      if (userData) {
+        await supabase
+          .from('User')
+          .update({ lastLogin: new Date().toISOString() })
+          .eq('id', user.id)
+      }
+
+      // If user is inactive, sign them out and redirect to sign-in
+      if (userData && userData.isActive === false) {
+        await supabase.auth.signOut()
+        const redirectUrl = new URL('/auth/signin', request.url)
+        redirectUrl.searchParams.set('error', 'account_disabled')
+        return NextResponse.redirect(redirectUrl)
+      }
+    } catch (error) {
+      // Log error but don't expose to user
+      console.error('Error checking user status:', error)
+      // Continue with request - don't block user on transient errors
     }
   }
 

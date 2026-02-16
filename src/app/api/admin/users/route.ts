@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
+import { updateUserSchema, safeValidateRequest } from "@/lib/validation";
 
 // GET all users with their groups
 export async function GET() {
@@ -41,14 +42,21 @@ export async function POST(request: Request) {
   try {
     await requireAdmin();
     const supabase = await getSupabaseClient();
-    const { userId, groupIds, isActive } = await request.json();
-
-    if (!userId) {
+    const body = await request.json();
+    
+    // Validate input
+    const validation = safeValidateRequest(updateUserSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Invalid request data" },
+        { 
+          error: "Invalid input data",
+          details: validation.error.errors.map(e => e.message)
+        },
         { status: 400 }
       );
     }
+    
+    const { userId, groupIds, isActive } = validation.data;
 
     // If isActive is provided, update user status
     if (typeof isActive === 'boolean') {
