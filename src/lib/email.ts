@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { sanitizeForEmail } from './html-sanitize';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -46,10 +47,15 @@ export async function sendBookingCancellationEmail({
       hour12: true,
     });
 
+    // Sanitize all user-provided data to prevent XSS in emails
+    const safeUserName = sanitizeForEmail(userName);
+    const safeBoatName = sanitizeForEmail(boatName);
+    const safeCancelledBy = sanitizeForEmail(cancelledBy);
+
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM,
       to: [userEmail],
-      subject: `Booking Cancelled: ${boatName}`,
+      subject: `Booking Cancelled: ${safeBoatName}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -64,7 +70,7 @@ export async function sendBookingCancellationEmail({
             </div>
             
             <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none;">
-              <p style="font-size: 16px; color: #374151; margin-top: 0;">Hi ${userName || 'there'},</p>
+              <p style="font-size: 16px; color: #374151; margin-top: 0;">Hi ${safeUserName || 'there'},</p>
               
               <p style="font-size: 16px; color: #374151;">Your boat booking has been cancelled by an administrator.</p>
               
@@ -74,7 +80,7 @@ export async function sendBookingCancellationEmail({
                 <table style="width: 100%; border-collapse: collapse;">
                   <tr>
                     <td style="padding: 8px 0; color: #6b7280; font-weight: 600;">Boat:</td>
-                    <td style="padding: 8px 0; color: #111827;">${boatName}</td>
+                    <td style="padding: 8px 0; color: #111827;">${safeBoatName}</td>
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; color: #6b7280; font-weight: 600;">Date & Time:</td>
@@ -86,7 +92,7 @@ export async function sendBookingCancellationEmail({
                   </tr>
                   <tr>
                     <td style="padding: 8px 0; color: #6b7280; font-weight: 600;">Cancelled By:</td>
-                    <td style="padding: 8px 0; color: #111827;">${cancelledBy}</td>
+                    <td style="padding: 8px 0; color: #111827;">${safeCancelledBy}</td>
                   </tr>
                 </table>
               </div>
@@ -101,15 +107,15 @@ export async function sendBookingCancellationEmail({
         </html>
       `,
       text: `
-Hi ${userName || 'there'},
+Hi ${safeUserName || 'there'},
 
 Your boat booking has been cancelled by an administrator.
 
 Cancelled Booking Details:
-- Boat: ${boatName}
+- Boat: ${safeBoatName}
 - Date & Time: ${formattedStartTime}
 - Duration: ${formattedStartTime} - ${formattedEndTime}
-- Cancelled By: ${cancelledBy}
+- Cancelled By: ${safeCancelledBy}
 
 If you have any questions about this cancellation, please contact an administrator.
 

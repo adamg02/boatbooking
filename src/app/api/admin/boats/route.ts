@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
+import { updateBoatSchema, createBoatSchema, safeValidateRequest } from "@/lib/validation";
 
 // GET all boats with their groups
 export async function GET() {
@@ -41,14 +42,21 @@ export async function POST(request: Request) {
   try {
     await requireAdmin();
     const supabase = await getSupabaseClient();
-    const { boatId, name, description, capacity, imageUrl, isActive, groupIds } = await request.json();
-
-    if (!boatId) {
+    const body = await request.json();
+    
+    // Validate input
+    const validation = safeValidateRequest(updateBoatSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Boat ID required" },
+        { 
+          error: "Invalid input data",
+          details: validation.error.errors.map(e => e.message)
+        },
         { status: 400 }
       );
     }
+    
+    const { boatId, name, description, capacity, imageUrl, isActive, groupIds } = validation.data;
 
     // Update boat details
     const { error: updateError } = await supabase
@@ -114,14 +122,21 @@ export async function PUT(request: Request) {
   try {
     await requireAdmin();
     const supabase = await getSupabaseClient();
-    const { name, description, capacity, imageUrl, isActive, groupIds } = await request.json();
-
-    if (!name) {
+    const body = await request.json();
+    
+    // Validate input
+    const validation = safeValidateRequest(createBoatSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Boat name required" },
+        { 
+          error: "Invalid input data",
+          details: validation.error.errors.map(e => e.message)
+        },
         { status: 400 }
       );
     }
+    
+    const { name, description, capacity, imageUrl, isActive, groupIds } = validation.data;
 
     const { data, error } = await supabase
       .from('Boat')

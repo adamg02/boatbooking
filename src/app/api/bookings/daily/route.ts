@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { addDays, parseISO, startOfDay } from "date-fns";
 import { getSupabaseClient } from "@/lib/supabase";
+import { dateQuerySchema, safeValidateRequest } from "@/lib/validation";
 
 export async function GET(request: Request) {
   try {
@@ -16,6 +17,18 @@ export async function GET(request: Request) {
 
     if (!dateParam) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 });
+    }
+
+    // Validate date format
+    const validation = safeValidateRequest(dateQuerySchema, { date: dateParam });
+    if (!validation.success) {
+      return NextResponse.json(
+        { 
+          error: "Invalid date format",
+          details: validation.error.errors.map(e => e.message)
+        },
+        { status: 400 }
+      );
     }
 
     const dayStart = startOfDay(parseISO(dateParam));

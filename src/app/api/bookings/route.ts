@@ -1,5 +1,6 @@
 import { getSupabaseClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { createBookingSchema, safeValidateRequest } from "@/lib/validation";
 
 export async function POST(request: Request) {
   try {
@@ -10,14 +11,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { boatId, startTime, endTime } = await request.json();
-
-    if (!boatId || !startTime || !endTime) {
+    const body = await request.json();
+    
+    // Validate input with Zod schema
+    const validation = safeValidateRequest(createBookingSchema, body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { 
+          error: "Invalid input data",
+          details: validation.error.errors.map(e => e.message)
+        },
         { status: 400 }
       );
     }
+    
+    const { boatId, startTime, endTime } = validation.data;
 
     const start = new Date(startTime);
     const end = new Date(endTime);
