@@ -8,7 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin();
+    const adminUser = await requireAdmin();
     const supabase = await getSupabaseClient();
     const { id } = await params;
 

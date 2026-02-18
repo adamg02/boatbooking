@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
 
-// GET all groups with boat/user counts
+// GET all groups with boat/user counts (scoped to the admin's club)
 export async function GET() {
   try {
-    await requireAdmin();
+    const adminUser = await requireAdmin();
     const supabase = await getSupabaseClient();
 
     const { data: groups, error } = await supabase
@@ -15,6 +15,7 @@ export async function GET() {
         boatGroups:BoatGroup(count),
         userGroups:UserGroup(count)
       `)
+      .eq('clubId', adminUser.clubId)
       .order('name', { ascending: true });
 
     if (error) {
@@ -38,7 +39,7 @@ export async function GET() {
 // POST - Create new group
 export async function POST(request: Request) {
   try {
-    await requireAdmin();
+    const adminUser = await requireAdmin();
     const body = await request.json();
     const { name, userIds = [], boatIds = [] } = body;
 
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
     // Create the group
     const { data: group, error: createError } = await supabase
       .from('Group')
-      .insert({ name: name.trim() })
+      .insert({ name: name.trim(), clubId: adminUser.clubId })
       .select()
       .single();
 
@@ -111,7 +112,7 @@ export async function POST(request: Request) {
 // PUT - Update group
 export async function PUT(request: Request) {
   try {
-    await requireAdmin();
+    const adminUser = await requireAdmin();
     const body = await request.json();
     const { groupId, name, userIds = [], boatIds = [] } = body;
 
@@ -175,7 +176,7 @@ export async function PUT(request: Request) {
 // DELETE - Delete group
 export async function DELETE(request: Request) {
   try {
-    await requireAdmin();
+    const adminUser = await requireAdmin();
     const { searchParams } = new URL(request.url);
     const groupId = searchParams.get("id");
 

@@ -3,11 +3,19 @@ import { getSupabaseClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
 import { format } from "date-fns";
 
-// GET all bookings
+// GET all bookings (scoped to the admin's club)
 export async function GET() {
   try {
-    await requireAdmin();
+    const adminUser = await requireAdmin();
     const supabase = await getSupabaseClient();
+
+    // Get all boat IDs for this club first
+    const { data: clubBoats } = await supabase
+      .from('Boat')
+      .select('id')
+      .eq('clubId', adminUser.clubId);
+
+    const boatIds = clubBoats?.map((b) => b.id) ?? [];
 
     const { data: bookings, error } = await supabase
       .from('Booking')
@@ -16,6 +24,7 @@ export async function GET() {
         user:User(id, name, email),
         boat:Boat(id, name)
       `)
+      .in('boatId', boatIds.length > 0 ? boatIds : ['__none__'])
       .order('startTime', { ascending: false });
 
     if (error) {

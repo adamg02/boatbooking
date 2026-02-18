@@ -31,10 +31,29 @@ export async function GET(request: Request) {
 
     const endDate = addDays(startDate, days);
 
+    // Get the user's club to scope the bookings
+    const { data: userData } = await supabase
+      .from('User')
+      .select('clubId')
+      .eq('id', user.id)
+      .single();
+
+    const clubId = userData?.clubId;
+
+    let boatIds: string[] = [];
+    if (clubId) {
+      const { data: clubBoats } = await supabase
+        .from('Boat')
+        .select('id')
+        .eq('clubId', clubId);
+      boatIds = clubBoats?.map((b) => b.id) ?? [];
+    }
+
     const { data: bookings, error } = await supabase
       .from("Booking")
       .select("startTime")
       .eq("status", "CONFIRMED")
+      .in("boatId", boatIds.length > 0 ? boatIds : ['__none__'])
       .gte("startTime", startDate.toISOString())
       .lt("startTime", endDate.toISOString());
 

@@ -1,7 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Paths that are accessible without belonging to a club
+const ONBOARDING_EXEMPT_PATHS = ['/onboarding', '/auth', '/api/clubs'];
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
   const response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -37,12 +42,12 @@ export async function middleware(request: NextRequest) {
   // Refresh session and check user status
   const { data: { user } } = await supabase.auth.getUser()
 
-  // If user is logged in, check if they're active
+  // If user is logged in, check their status and club membership
   if (user) {
     try {
       const { data: userData } = await supabase
         .from('User')
-        .select('isActive, lastLogin')
+        .select('isActive, lastLogin, clubId')
         .eq('id', user.id)
         .single()
 
@@ -60,6 +65,12 @@ export async function middleware(request: NextRequest) {
         const redirectUrl = new URL('/auth/signin', request.url)
         redirectUrl.searchParams.set('error', 'account_disabled')
         return NextResponse.redirect(redirectUrl)
+      }
+
+      // If user has no club and is not already on an exempt path, redirect to onboarding
+      const isExemptPath = ONBOARDING_EXEMPT_PATHS.some((p) => pathname.startsWith(p));
+      if (userData && !userData.clubId && !isExemptPath) {
+        return NextResponse.redirect(new URL('/onboarding', request.url))
       }
     } catch (error) {
       // Log error but don't expose to user

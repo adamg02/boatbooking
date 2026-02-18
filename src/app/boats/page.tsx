@@ -1,7 +1,7 @@
 import { getSupabaseClient } from "@/lib/supabase";
 import { redirect } from "next/navigation";
 import BoatsList from "@/components/BoatsList";
-import { isAdmin } from "@/lib/admin";
+import { isAdmin, getUserClub } from "@/lib/admin";
 import { format } from "date-fns";
 import MobileNavBar from "@/components/MobileNavBar";
 import Link from "next/link";
@@ -15,17 +15,24 @@ export default async function BoatsPage() {
     redirect("/auth/signin");
   }
 
-  // Get user details from User table
+  // Get user details and club membership
   const { data: userData } = await supabase
     .from('User')
-    .select('name, email')
+    .select('name, email, clubId')
     .eq('id', user.id)
     .single();
+
+  // If user has no club, middleware should have redirected, but guard here too
+  if (!userData?.clubId) {
+    redirect("/onboarding");
+  }
+
+  const clubId = userData.clubId;
 
   // Check if user is admin
   const adminCheck = await isAdmin(user.id);
 
-  // Get user's groups
+  // Get user's groups (scoped to their club)
   const { data: userGroups } = await supabase
     .from('UserGroup')
     .select('groupId, group:Group(*)')
@@ -33,16 +40,14 @@ export default async function BoatsPage() {
 
   const userGroupIds = userGroups?.map(ug => ug.groupId) || [];
 
-  // Get boats the user can access
-  // Users can book boats that either:
-  // 1. Have no group restrictions
-  // 2. Have groups that the user belongs to
+  // Get boats for this club
   const { data: allBoats } = await supabase
     .from('Boat')
     .select('*, boatGroups:BoatGroup(groupId, group:Group(*)), capacity, boatType')
-    .eq('isActive', true);
+    .eq('isActive', true)
+    .eq('clubId', clubId);
 
-  // Filter boats based on permissions
+  // Filter boats based on group permissions
   const boats = allBoats?.filter((boat: any) => {
     const boatGroupIds = boat.boatGroups?.map((bg: any) => bg.groupId) || [];
     return boatGroupIds.length === 0 || boatGroupIds.some((id: string) => userGroupIds.includes(id));

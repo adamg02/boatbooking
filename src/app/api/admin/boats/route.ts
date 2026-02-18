@@ -3,10 +3,10 @@ import { getSupabaseClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
 import { updateBoatSchema, createBoatSchema, safeValidateRequest } from "@/lib/validation";
 
-// GET all boats with their groups
+// GET all boats with their groups (scoped to the admin's club)
 export async function GET() {
   try {
-    await requireAdmin();
+    const adminUser = await requireAdmin();
     const supabase = await getSupabaseClient();
 
     const { data: boats, error } = await supabase
@@ -17,6 +17,7 @@ export async function GET() {
           group:Group(id, name)
         )
       `)
+      .eq('clubId', adminUser.clubId)
       .order('name', { ascending: true });
 
     if (error) {
@@ -40,13 +41,25 @@ export async function GET() {
 // POST update boat details and groups
 export async function POST(request: Request) {
   try {
-    await requireAdmin();
+    const adminUser = await requireAdmin();
     const supabase = await getSupabaseClient();
     const body = await request.json();
-    
+
+    // Sanitise optional string fields: treat empty strings as undefined
+    const sanitisedBody = {
+      boatId: body.boatId,
+      name: body.name,
+      description: body.description === '' ? undefined : body.description,
+      capacity: typeof body.capacity === 'number' ? body.capacity : undefined,
+      imageUrl: body.imageUrl === '' ? undefined : body.imageUrl,
+      isActive: body.isActive,
+      groupIds: body.groupIds,
+    };
+
     // Validate input
-    const validation = safeValidateRequest(updateBoatSchema, body);
+    const validation = safeValidateRequest(updateBoatSchema, sanitisedBody);
     if (!validation.success) {
+      console.error('Update boat validation errors:', JSON.stringify(validation.error.errors, null, 2));
       return NextResponse.json(
         { 
           error: "Invalid input data",
@@ -120,13 +133,27 @@ export async function POST(request: Request) {
 // PUT create new boat
 export async function PUT(request: Request) {
   try {
-    await requireAdmin();
+    const adminUser = await requireAdmin();
     const supabase = await getSupabaseClient();
     const body = await request.json();
     
+    const { name, description, capacity, imageUrl, isActive, groupIds } = body;
+
+    // Sanitise optional fields: treat empty strings as null/undefined
+    const sanitisedBody = {
+      name,
+      description: description === '' ? undefined : description,
+      capacity: typeof capacity === 'number' ? capacity : undefined,
+      imageUrl: imageUrl === '' ? undefined : imageUrl,
+      isActive,
+      groupIds,
+    };
+
     // Validate input
-    const validation = safeValidateRequest(createBoatSchema, body);
+    const validation = safeValidateRequest(createBoatSchema, sanitisedBody);
     if (!validation.success) {
+      console.error('Create boat validation errors:', JSON.stringify(validation.error.errors, null, 2));
+      console.error('Create boat body received:', JSON.stringify(sanitisedBody, null, 2));
       return NextResponse.json(
         { 
           error: "Invalid input data",
@@ -136,16 +163,17 @@ export async function PUT(request: Request) {
       );
     }
     
-    const { name, description, capacity, imageUrl, isActive, groupIds } = validation.data;
+    const { name: validName, description: validDescription, capacity: validCapacity, imageUrl: validImageUrl, isActive: validIsActive, groupIds: validGroupIds } = validation.data;
 
     const { data, error } = await supabase
       .from('Boat')
       .insert({
-        name,
-        description: description || null,
-        capacity: capacity || 1,
-        imageUrl: imageUrl || null,
-        isActive: isActive !== undefined ? isActive : true,
+        name: validName,
+        description: validDescription || null,
+        capacity: validCapacity || 1,
+        imageUrl: validImageUrl || null,
+        isActive: validIsActive !== undefined ? validIsActive : true,
+        clubId: adminUser.clubId,
       })
       .select()
       .single();
@@ -159,8 +187,8 @@ export async function PUT(request: Request) {
     }
 
     // Add boat to groups if provided
-    if (Array.isArray(groupIds) && groupIds.length > 0) {
-      const boatGroups = groupIds.map(groupId => ({
+    if (Array.isArray(validGroupIds) && validGroupIds.length > 0) {
+      const boatGroups = validGroupIds.map(groupId => ({
         boatId: data.id,
         groupId,
       }));

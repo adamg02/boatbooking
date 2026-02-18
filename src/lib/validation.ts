@@ -24,29 +24,34 @@ export const deleteBookingSchema = z.object({
 });
 
 // Admin boat validation
+const imageUrlField = z.preprocess(
+  (val) => (val === '' ? null : val),
+  z.string().url('Invalid image URL').nullable().optional()
+);
+
 export const updateBoatSchema = z.object({
-  boatId: z.string().uuid('Invalid boat ID format'),
+  boatId: z.string().min(1, 'Boat ID is required'),
   name: z.string().min(1, 'Boat name is required').max(100, 'Boat name too long'),
   description: z.string().max(500, 'Description too long').nullable().optional(),
   capacity: z.number().int().min(1).max(100).optional(),
-  imageUrl: z.string().url('Invalid image URL').nullable().optional(),
+  imageUrl: imageUrlField,
   isActive: z.boolean().optional(),
-  groupIds: z.array(z.string().uuid('Invalid group ID format')).optional(),
+  groupIds: z.array(z.string().min(1, 'Invalid group ID')).optional(),
 });
 
 export const createBoatSchema = z.object({
   name: z.string().min(1, 'Boat name is required').max(100, 'Boat name too long'),
   description: z.string().max(500, 'Description too long').nullable().optional(),
   capacity: z.number().int().min(1).max(100).optional(),
-  imageUrl: z.string().url('Invalid image URL').nullable().optional(),
+  imageUrl: imageUrlField,
   isActive: z.boolean().optional(),
-  groupIds: z.array(z.string().uuid('Invalid group ID format')).optional(),
+  groupIds: z.array(z.string().min(1, 'Invalid group ID')).optional(),
 });
 
 // Admin user validation
 export const updateUserSchema = z.object({
-  userId: z.string().uuid('Invalid user ID format'),
-  groupIds: z.array(z.string().uuid('Invalid group ID format')).optional(),
+  userId: z.string().min(1, 'User ID is required'),
+  groupIds: z.array(z.string().min(1, 'Invalid group ID')).optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -57,7 +62,7 @@ export const createGroupSchema = z.object({
 });
 
 export const updateGroupSchema = z.object({
-  id: z.string().uuid('Invalid group ID format'),
+  id: z.string().min(1, 'Group ID is required'),
   name: z.string().min(1, 'Group name is required').max(100, 'Group name too long'),
   description: z.string().max(500, 'Description too long').nullable().optional(),
 });
@@ -68,7 +73,7 @@ export const dateQuerySchema = z.object({
 });
 
 export const uuidQuerySchema = z.object({
-  id: z.string().uuid('Invalid ID format'),
+  id: z.string().min(1, 'ID is required'),
 });
 
 /**

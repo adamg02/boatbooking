@@ -81,7 +81,8 @@ export default function AdminUsersPage() {
         setEditingUser(null);
         setSelectedGroups([]);
       } else {
-        alert("Failed to update user groups");
+        const errData = await res.json().catch(() => ({}));
+        alert("Failed to update user groups: " + (errData.details?.join(', ') || errData.error || res.status));
       }
     } catch (error) {
       console.error("Failed to save:", error);

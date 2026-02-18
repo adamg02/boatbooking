@@ -43,7 +43,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if boat exists and is active
+    // Check if boat exists and is active, and belongs to user's club
+    const { data: userData } = await supabase
+      .from('User')
+      .select('clubId')
+      .eq('id', user.id)
+      .single();
+
     const { data: boat, error: boatError } = await supabase
       .from('Boat')
       .select('*, boatGroups:BoatGroup(groupId)')
@@ -52,6 +58,11 @@ export async function POST(request: Request) {
       .single();
 
     if (boatError || !boat) {
+      return NextResponse.json({ error: "Boat not found or not available for booking" }, { status: 404 });
+    }
+
+    // Ensure the boat belongs to the user's club
+    if (!userData?.clubId || boat.clubId !== userData.clubId) {
       return NextResponse.json({ error: "Boat not found or not available for booking" }, { status: 404 });
     }
 

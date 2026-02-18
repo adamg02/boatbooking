@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSupabaseClient } from "@/lib/supabase";
-import { isAdmin } from "@/lib/admin";
+import { isAdmin, getUserClub } from "@/lib/admin";
 import AdminLayout from "@/components/AdminLayout";
 import Link from "next/link";
 
@@ -16,13 +16,30 @@ export default async function AdminDashboard() {
   if (!adminCheck) {
     redirect("/boats");
   }
+
+  // Get the admin's club
+  const club = await getUserClub(user.id);
+  const clubId = club?.id;
   
-  // Get dashboard stats
+  // Get dashboard stats scoped to this club
   const now = new Date().toISOString();
+
+  // First get boat IDs for this club (needed for bookings count)
+  const { data: clubBoats } = clubId
+    ? await supabase.from('Boat').select('id').eq('clubId', clubId)
+    : { data: [] };
+  const boatIds = clubBoats?.map((b) => b.id) ?? [];
+
   const [usersResult, boatsResult, bookingsResult] = await Promise.all([
-    supabase.from('User').select('id', { count: 'exact', head: true }).eq('isActive', true),
-    supabase.from('Boat').select('id', { count: 'exact', head: true }),
-    supabase.from('Booking').select('id', { count: 'exact', head: true }).eq('status', 'CONFIRMED').gte('endTime', now),
+    clubId
+      ? supabase.from('User').select('id', { count: 'exact', head: true }).eq('isActive', true).eq('clubId', clubId)
+      : Promise.resolve({ count: 0 }),
+    clubId
+      ? supabase.from('Boat').select('id', { count: 'exact', head: true }).eq('clubId', clubId)
+      : Promise.resolve({ count: 0 }),
+    boatIds.length > 0
+      ? supabase.from('Booking').select('id', { count: 'exact', head: true }).eq('status', 'CONFIRMED').gte('endTime', now).in('boatId', boatIds)
+      : Promise.resolve({ count: 0 }),
   ]);
 
   const stats = [
@@ -52,9 +69,16 @@ export default async function AdminDashboard() {
   return (
     <AdminLayout>
       <div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-8">
-          Admin Dashboard
-        </h2>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900">
+            Admin Dashboard
+          </h2>
+          {club && (
+            <p className="mt-1 text-gray-500">
+              Club: <span className="font-semibold text-gray-700">{club.name}</span>
+            </p>
+          )}
+        </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -114,6 +138,15 @@ export default async function AdminDashboard() {
               <h4 className="font-semibold text-gray-900">View Bookings</h4>
               <p className="text-sm text-gray-600 mt-1">
                 See all bookings across all boats
+              </p>
+            </Link>
+            <Link
+              href="/admin/club"
+              className="border-2 border-gray-200 rounded-lg p-4 hover:border-orange-500 hover:bg-orange-50 transition-all"
+            >
+              <h4 className="font-semibold text-gray-900">Club Settings</h4>
+              <p className="text-sm text-gray-600 mt-1">
+                Manage join code and club details
               </p>
             </Link>
           </div>

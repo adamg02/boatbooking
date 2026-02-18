@@ -3,10 +3,10 @@ import { getSupabaseClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
 import { updateUserSchema, safeValidateRequest } from "@/lib/validation";
 
-// GET all users with their groups
+// GET all users with their groups (scoped to the admin's club)
 export async function GET() {
   try {
-    await requireAdmin();
+    const adminUser = await requireAdmin();
     const supabase = await getSupabaseClient();
 
     const { data: users, error } = await supabase
@@ -17,6 +17,7 @@ export async function GET() {
           group:Group(id, name)
         )
       `)
+      .eq('clubId', adminUser.clubId)
       .order('createdAt', { ascending: false });
 
     if (error) {
@@ -40,13 +41,15 @@ export async function GET() {
 // POST update user groups or status
 export async function POST(request: Request) {
   try {
-    await requireAdmin();
+    const adminUser = await requireAdmin();
     const supabase = await getSupabaseClient();
     const body = await request.json();
     
     // Validate input
     const validation = safeValidateRequest(updateUserSchema, body);
     if (!validation.success) {
+      console.error('Update user validation errors:', JSON.stringify(validation.error.errors, null, 2));
+      console.error('Update user body received:', JSON.stringify(body, null, 2));
       return NextResponse.json(
         { 
           error: "Invalid input data",

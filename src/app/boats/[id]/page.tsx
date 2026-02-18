@@ -31,6 +31,17 @@ export default async function BoatBookingPage({
     redirect("/boats");
   }
 
+  // Verify this boat belongs to the user's club
+  const { data: userData } = await supabase
+    .from('User')
+    .select('clubId')
+    .eq('id', user.id)
+    .single();
+
+  if (!userData?.clubId || boat.clubId !== userData.clubId) {
+    redirect("/boats");
+  }
+
   // Filter bookings to only show confirmed and future bookings
   boat.bookings = boat.bookings?.filter((b: any) => 
     b.status === 'CONFIRMED' && new Date(b.endTime) >= new Date()

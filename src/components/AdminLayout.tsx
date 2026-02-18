@@ -30,6 +30,7 @@ export default function AdminLayout({
     { href: "/admin/users", label: "Users" },
     { href: "/admin/boats", label: "Boats" },
     { href: "/admin/groups", label: "Groups" },
+    { href: "/admin/club", label: "Club Settings" },
   ];
 
   useEffect(() => {

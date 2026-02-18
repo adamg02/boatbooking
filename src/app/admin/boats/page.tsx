@@ -141,7 +141,8 @@ export default function AdminBoatsPage() {
         setFormData({ name: "", description: "", capacity: 1, imageUrl: "", isActive: true });
         setSelectedGroups([]);
       } else {
-        alert("Failed to create boat");
+        const errData = await res.json().catch(() => ({}));
+        alert("Failed to create boat: " + (errData.details?.join(', ') || errData.error || res.status));
       }
     } catch (error) {
       console.error("Failed to create:", error);
