@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SignOutButton from "@/components/SignOutButton";
-import UserProfile from "@/components/UserProfile";
 import { getSupabaseClientComponent } from "@/lib/supabase-client";
 
 interface UserGroupData {
@@ -21,6 +20,7 @@ export default function AdminLayout({
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
   const supabase = getSupabaseClientComponent();
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -62,6 +62,13 @@ export default function AdminLayout({
     const checkAdmin = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        const { data: userData } = await supabase
+          .from('User')
+          .select('name, email')
+          .eq('id', user.id)
+          .single();
+        setUserName(userData?.name || userData?.email || null);
+
         const { data, error } = await supabase
           .from('UserGroup')
           .select('group:Group(name)')
@@ -114,7 +121,14 @@ export default function AdminLayout({
                   </svg>
                 )}
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
+                {userName && (
+                  <p className="text-sm text-gray-600 mt-0.5">
+                    Welcome, {userName} (Admin)
+                  </p>
+                )}
+              </div>
               <nav className="hidden md:flex space-x-4">
                 {navItems.map((item) => {
                   const isActive = pathname === item.href;
@@ -135,7 +149,6 @@ export default function AdminLayout({
               </nav>
             </div>
             <div className="flex items-center space-x-4">
-              <UserProfile isAdmin={isAdmin} />
               <SignOutButton />
             </div>
           </div>

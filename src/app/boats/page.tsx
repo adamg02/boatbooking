@@ -80,7 +80,7 @@ export default async function BoatsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <MobileNavBar 
         title="Available Boats" 
-        subtitle={userData?.name ? `Welcome, ${userData.name}` : undefined}
+        subtitle={userData?.name ? `Welcome, ${userData.name}${adminCheck ? ' (Admin)' : ''}` : undefined}
         isAdmin={adminCheck}
       />
 

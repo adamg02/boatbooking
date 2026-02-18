@@ -39,7 +39,7 @@ export default function BoatFilter({ selectedFilter, onFilterChange, boatCounts 
   ];
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 mb-6">
+    <div className="flex gap-1.5 overflow-x-auto pb-2 mb-6">
       {filters.map((filter) => {
         const count = boatCounts?.[filter.value] ?? 0;
         const isSelected = selectedFilter === filter.value;
@@ -49,7 +49,7 @@ export default function BoatFilter({ selectedFilter, onFilterChange, boatCounts 
             key={filter.value}
             onClick={() => handleFilterClick(filter.value)}
             className={`
-              flex-shrink-0 px-6 py-2 rounded-full font-medium text-sm transition-all
+              flex-shrink-0 px-3 py-1.5 rounded-full font-medium text-sm transition-all
               ${isSelected
                 ? 'bg-blue-600 text-white shadow-md'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -58,7 +58,7 @@ export default function BoatFilter({ selectedFilter, onFilterChange, boatCounts 
           >
             {filter.label}
             {count > 0 && (
-              <span className={`ml-1.5 ${isSelected ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
+              <span className={`ml-1 ${isSelected ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
                 ({count})
               </span>
             )}

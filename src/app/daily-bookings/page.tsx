@@ -35,6 +35,7 @@ export default function DailyBookingsPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userName, setUserName] = useState<string | null>(null);
   const supabase = getSupabaseClientComponent();
 
   const BOOKING_WINDOW_DAYS = 28;
@@ -59,6 +60,14 @@ export default function DailyBookingsPage() {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
+      if (user) {
+        const { data: userData } = await supabase
+          .from('User')
+          .select('name, email')
+          .eq('id', user.id)
+          .single();
+        setUserName(userData?.name || userData?.email || null);
+      }
     };
 
     fetchUser();
@@ -196,7 +205,7 @@ export default function DailyBookingsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <MobileNavBar 
         title="Daily Bookings" 
-        subtitle={format(selectedDate, "MMM d, yyyy")}
+        subtitle={userName ? `Welcome, ${userName}${isAdmin ? ' (Admin)' : ''}` : undefined}
         isAdmin={isAdmin}
       />
 
