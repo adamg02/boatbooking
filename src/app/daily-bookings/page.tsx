@@ -176,6 +176,13 @@ export default function DailyBookingsPage() {
       }
     });
 
+    // Sort bookings within each group by boat name
+    groups.forEach((group) => {
+      group.bookings.sort((a, b) => 
+        a.boat.name.localeCompare(b.boat.name)
+      );
+    });
+
     return Array.from(groups.values()).sort(
       (a, b) => a.start.getTime() - b.start.getTime()
     );
