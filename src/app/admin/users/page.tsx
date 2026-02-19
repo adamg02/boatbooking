@@ -21,6 +21,23 @@ interface User {
   }>;
 }
 
+type SortColumn = 'name' | 'email' | 'provider' | 'status' | 'lastLogin' | 'createdAt';
+type SortDirection = 'asc' | 'desc';
+
+function SortIcon({ column, sortColumn, sortDirection }: { column: SortColumn; sortColumn: SortColumn | null; sortDirection: SortDirection }) {
+  const active = sortColumn === column;
+  return (
+    <span className="inline-flex flex-col ml-1 align-middle">
+      <svg width="8" height="5" viewBox="0 0 8 5" className={active && sortDirection === 'asc' ? 'text-blue-600' : 'text-gray-300'}>
+        <path d="M4 0l4 5H0z" fill="currentColor" />
+      </svg>
+      <svg width="8" height="5" viewBox="0 0 8 5" className={`mt-0.5 ${active && sortDirection === 'desc' ? 'text-blue-600' : 'text-gray-300'}`}>
+        <path d="M4 5L0 0h8z" fill="currentColor" />
+      </svg>
+    </span>
+  );
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -29,6 +46,8 @@ export default function AdminUsersPage() {
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [showInactive, setShowInactive] = useState(false);
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     loadData();
@@ -128,7 +147,34 @@ export default function AdminUsersPage() {
     }
   };
 
-  const filteredUsers = showInactive ? users : users.filter(u => u.isActive);
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const filteredUsers = (() => {
+    const base = showInactive ? users : users.filter((u) => u.isActive);
+    if (!sortColumn) return base;
+    return [...base].sort((a, b) => {
+      let aVal: string;
+      let bVal: string;
+      switch (sortColumn) {
+        case 'name':      aVal = (a.name ?? '').toLowerCase();      bVal = (b.name ?? '').toLowerCase();      break;
+        case 'email':     aVal = a.email.toLowerCase();             bVal = b.email.toLowerCase();             break;
+        case 'provider':  aVal = (a.provider ?? '').toLowerCase();  bVal = (b.provider ?? '').toLowerCase();  break;
+        case 'status':    aVal = a.isActive ? 'active' : 'disabled'; bVal = b.isActive ? 'active' : 'disabled'; break;
+        case 'lastLogin': aVal = a.lastLogin ?? '';                  bVal = b.lastLogin ?? '';                 break;
+        case 'createdAt': aVal = a.createdAt;                        bVal = b.createdAt;                       break;
+        default:          return 0;
+      }
+      const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      return sortDirection === 'asc' ? cmp : -cmp;
+    });
+  })();
 
   const getProviderIcon = (provider: string) => {
     switch (provider) {
@@ -282,27 +328,34 @@ export default function AdminUsersPage() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Provider
-                </th>
+                {([
+                  { label: 'User',       col: 'name'      },
+                  { label: 'Email',      col: 'email'     },
+                ] as { label: string; col: SortColumn }[]).map(({ label, col }) => (
+                  <th
+                    key={col}
+                    onClick={() => handleSort(col)}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                  >
+                    {label}<SortIcon column={col} sortColumn={sortColumn} sortDirection={sortDirection} />
+                  </th>
+                ))}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Groups
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Login
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Joined
-                </th>
+                {([
+                  { label: 'Status',     col: 'status'    },
+                  { label: 'Last Login', col: 'lastLogin' },
+                  { label: 'Joined',     col: 'createdAt' },
+                ] as { label: string; col: SortColumn }[]).map(({ label, col }) => (
+                  <th
+                    key={col}
+                    onClick={() => handleSort(col)}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 whitespace-nowrap"
+                  >
+                    {label}<SortIcon column={col} sortColumn={sortColumn} sortDirection={sortDirection} />
+                  </th>
+                ))}
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
@@ -318,16 +371,12 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-600">{user.email}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {user.provider ? (
-                      getProviderIcon(user.provider)
-                    ) : (
-                      <span className="text-xs text-gray-400">None</span>
+                    {user.provider && (
+                      <div className="mt-1">{getProviderIcon(user.provider)}</div>
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-col gap-1 items-start">
                       {user.userGroups.length > 0 ? (
                         user.userGroups.map((ug) => (
                           <span
