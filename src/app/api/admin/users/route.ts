@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseClient, getSupabaseAdminClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
 import { updateUserSchema, safeValidateRequest } from "@/lib/validation";
 
@@ -79,6 +79,51 @@ export async function POST(request: Request) {
 
     // If groupIds is provided, update user groups
     if (Array.isArray(groupIds)) {
+      // Ensure the target user exists in the User table before touching UserGroup.
+      // Users who signed up before the DB trigger was installed may be missing.
+      const { data: existingUser } = await supabase
+        .from('User')
+        .select('id')
+        .eq('id', userId)
+        .single();
+
+      if (!existingUser) {
+        // Pull the user from auth and sync them now.
+        try {
+          const adminClient = getSupabaseAdminClient();
+          const { data: authUser } = await adminClient.auth.admin.getUserById(userId);
+          if (authUser?.user) {
+            const u = authUser.user;
+            await adminClient.from('User').upsert(
+              {
+                id: u.id,
+                email: u.email ?? '',
+                name:
+                  u.user_metadata?.full_name ??
+                  u.user_metadata?.name ??
+                  u.email?.split('@')[0] ??
+                  'Unknown',
+                image: u.user_metadata?.avatar_url ?? null,
+                emailVerified: u.email_confirmed_at ?? null,
+                updatedAt: new Date().toISOString(),
+              },
+              { onConflict: 'id', ignoreDuplicates: false }
+            );
+          } else {
+            return NextResponse.json(
+              { error: "User not found in auth system" },
+              { status: 404 }
+            );
+          }
+        } catch (syncError) {
+          console.error('Assign user sync error:', syncError);
+          return NextResponse.json(
+            { error: "Failed to sync user record before assigning groups" },
+            { status: 500 }
+          );
+        }
+      }
+
       // Delete existing user groups
       await supabase
         .from('UserGroup')

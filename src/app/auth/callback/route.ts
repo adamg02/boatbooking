@@ -1,4 +1,4 @@
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseClient, getSupabaseAdminClient } from "@/lib/supabase";
 import { NextResponse } from "next/server";
 
 /**
@@ -32,7 +32,35 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await getSupabaseClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { data: sessionData } = await supabase.auth.exchangeCodeForSession(code);
+
+    // Ensure the user exists in the public User table.
+    // The DB trigger handles new sign-ups, but users created before the trigger
+    // was installed may be missing. Upsert defensively on every sign-in.
+    if (sessionData?.user) {
+      const { user } = sessionData;
+      try {
+        const adminClient = getSupabaseAdminClient();
+        await adminClient.from('User').upsert(
+          {
+            id: user.id,
+            email: user.email ?? '',
+            name:
+              user.user_metadata?.full_name ??
+              user.user_metadata?.name ??
+              user.email?.split('@')[0] ??
+              'Unknown',
+            image: user.user_metadata?.avatar_url ?? null,
+            emailVerified: user.email_confirmed_at ?? null,
+            updatedAt: new Date().toISOString(),
+          },
+          { onConflict: 'id', ignoreDuplicates: false }
+        );
+      } catch (syncError) {
+        // Non-fatal: log and continue so the user can still sign in.
+        console.error('User sync error:', syncError);
+      }
+    }
   }
 
   // Check for next parameter and validate it
