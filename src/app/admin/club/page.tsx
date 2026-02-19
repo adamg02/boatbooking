@@ -302,6 +302,7 @@ export default function AdminClubPage() {
                 )}
               </div>
             </div>
+
           </div>
         )}
       </div>

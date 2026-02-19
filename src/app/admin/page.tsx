@@ -149,6 +149,15 @@ export default async function AdminDashboard() {
                 Manage join code and club details
               </p>
             </Link>
+            <Link
+              href="/admin/subscription"
+              className="border-2 border-gray-200 rounded-lg p-4 hover:border-indigo-500 hover:bg-indigo-50 transition-all"
+            >
+              <h4 className="font-semibold text-gray-900">Subscription</h4>
+              <p className="text-sm text-gray-600 mt-1">
+                Manage your plan and view payment history
+              </p>
+            </Link>
           </div>
         </div>
       </div>

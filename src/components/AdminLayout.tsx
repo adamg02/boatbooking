@@ -31,6 +31,7 @@ export default function AdminLayout({
     { href: "/admin/boats", label: "Boats" },
     { href: "/admin/groups", label: "Groups" },
     { href: "/admin/club", label: "Club Settings" },
+    { href: "/admin/subscription", label: "Subscription" },
   ];
 
   useEffect(() => {

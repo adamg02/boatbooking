@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
 import { updateBoatSchema, createBoatSchema, safeValidateRequest } from "@/lib/validation";
+import { FREE_TIER_BOAT_LIMIT } from "@/lib/stripe";
 
 // GET all boats with their groups (scoped to the admin's club)
 export async function GET() {
@@ -136,7 +137,32 @@ export async function PUT(request: Request) {
     const adminUser = await requireAdmin();
     const supabase = await getSupabaseClient();
     const body = await request.json();
-    
+
+    // Enforce free-tier boat limit
+    const { data: club } = await supabase
+      .from("Club")
+      .select("subscriptionTier")
+      .eq("id", adminUser.clubId)
+      .single();
+
+    const tier = club?.subscriptionTier ?? "free";
+    if (tier === "free") {
+      const { count: boatCount } = await supabase
+        .from("Boat")
+        .select("id", { count: "exact", head: true })
+        .eq("clubId", adminUser.clubId);
+
+      if ((boatCount ?? 0) >= FREE_TIER_BOAT_LIMIT) {
+        return NextResponse.json(
+          {
+            error: `Free plan is limited to ${FREE_TIER_BOAT_LIMIT} boats. Upgrade to the paid plan for unlimited boats.`,
+            limitReached: true,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     const { name, description, capacity, imageUrl, isActive, groupIds } = body;
 
     // Sanitise optional fields: treat empty strings as null/undefined
