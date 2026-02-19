@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseAdminClient } from "@/lib/supabase";
 import type Stripe from "stripe";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  const supabase = await getSupabaseClient();
+  const supabase = getSupabaseAdminClient();
 
   try {
     switch (event.type) {
@@ -30,9 +30,10 @@ export async function POST(request: Request) {
       case "customer.subscription.updated": {
         const sub = event.data.object as Stripe.Subscription;
         const customerId = sub.customer as string;
+        const clubId = sub.metadata?.clubId;
         const item = sub.items.data[0];
         const interval = (item?.price?.recurring?.interval ?? "month") as "month" | "year";
-        // current_period_end moved to item level in API 2024-09-30+
+        // current_period_end is present at item level and/or root depending on API version
         const periodEndTimestamp: number | undefined =
           (item as any)?.current_period_end ?? (sub as any).current_period_end;
         const periodEnd = periodEndTimestamp
@@ -40,17 +41,23 @@ export async function POST(request: Request) {
           : null;
         const tier = sub.status === "active" || sub.status === "trialing" ? "paid" : "free";
 
-        await supabase
-          .from("Club")
-          .update({
-            subscriptionTier: tier,
-            subscriptionStatus: sub.status,
-            billingInterval: interval,
-            stripeSubscriptionId: sub.id,
-            subscriptionCurrentPeriodEnd: periodEnd,
-            updatedAt: new Date().toISOString(),
-          })
-          .eq("stripeCustomerId", customerId);
+        const updatePayload = {
+          subscriptionTier: tier,
+          subscriptionStatus: sub.status,
+          billingInterval: interval,
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: sub.id,
+          subscriptionCurrentPeriodEnd: periodEnd,
+          updatedAt: new Date().toISOString(),
+        };
+
+        if (clubId) {
+          // Preferred: match by clubId stored in subscription metadata
+          await supabase.from("Club").update(updatePayload).eq("id", clubId);
+        } else {
+          // Fallback: match by Stripe customer ID
+          await supabase.from("Club").update(updatePayload).eq("stripeCustomerId", customerId);
+        }
 
         break;
       }
@@ -59,18 +66,22 @@ export async function POST(request: Request) {
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
         const customerId = sub.customer as string;
+        const clubId = sub.metadata?.clubId;
 
-        await supabase
-          .from("Club")
-          .update({
-            subscriptionTier: "free",
-            subscriptionStatus: "canceled",
-            billingInterval: null,
-            stripeSubscriptionId: null,
-            subscriptionCurrentPeriodEnd: null,
-            updatedAt: new Date().toISOString(),
-          })
-          .eq("stripeCustomerId", customerId);
+        const cancelPayload = {
+          subscriptionTier: "free",
+          subscriptionStatus: "canceled",
+          billingInterval: null,
+          stripeSubscriptionId: null,
+          subscriptionCurrentPeriodEnd: null,
+          updatedAt: new Date().toISOString(),
+        };
+
+        if (clubId) {
+          await supabase.from("Club").update(cancelPayload).eq("id", clubId);
+        } else {
+          await supabase.from("Club").update(cancelPayload).eq("stripeCustomerId", customerId);
+        }
 
         break;
       }
@@ -80,22 +91,28 @@ export async function POST(request: Request) {
         const invoice = event.data.object as Stripe.Invoice & Record<string, any>;
         const customerId = invoice.customer as string;
 
-        // Find the club by Stripe customer ID
-        const { data: club } = await supabase
-          .from("Club")
-          .select("id, billingInterval")
-          .eq("stripeCustomerId", customerId)
-          .single();
-
-        if (!club) break;
-
-        const sub = (invoice as any).subscription
-          ? await stripe.subscriptions.retrieve((invoice as any).subscription as string)
+        const sub = invoice.subscription
+          ? await stripe.subscriptions.retrieve(invoice.subscription as string)
           : null;
 
-        const interval = (sub?.items.data[0]?.price?.recurring?.interval ?? club.billingInterval ?? "month") as "month" | "year";
+        // Resolve clubId: prefer subscription metadata, fall back to DB lookup
+        let clubId: string | null = sub?.metadata?.clubId ?? null;
+        let billingIntervalFromDb: string | null = null;
 
-        // current_period_start/end moved to item level in API 2024-09-30+
+        if (!clubId) {
+          const { data: club } = await supabase
+            .from("Club")
+            .select("id, billingInterval")
+            .eq("stripeCustomerId", customerId)
+            .single();
+          clubId = club?.id ?? null;
+          billingIntervalFromDb = club?.billingInterval ?? null;
+        }
+
+        if (!clubId) break;
+
+        const interval = (sub?.items.data[0]?.price?.recurring?.interval ?? billingIntervalFromDb ?? "month") as "month" | "year";
+
         const subItem = sub?.items.data[0] as any;
         const periodStart = subItem?.current_period_start
           ? new Date(subItem.current_period_start * 1000).toISOString()
@@ -109,7 +126,7 @@ export async function POST(request: Request) {
           : null;
 
         await supabase.from("Payment").insert({
-          clubId: club.id,
+          clubId,
           stripeInvoiceId: invoice.id,
           stripePaymentIntentId:
             typeof invoice.payment_intent === "string" ? invoice.payment_intent : null,
@@ -133,16 +150,27 @@ export async function POST(request: Request) {
         const invoice = event.data.object as Stripe.Invoice & Record<string, any>;
         const customerId = invoice.customer as string;
 
-        const { data: club } = await supabase
-          .from("Club")
-          .select("id, billingInterval")
-          .eq("stripeCustomerId", customerId)
-          .single();
+        const sub = invoice.subscription
+          ? await stripe.subscriptions.retrieve(invoice.subscription as string)
+          : null;
 
-        if (!club) break;
+        let clubId: string | null = sub?.metadata?.clubId ?? null;
+        let billingIntervalFromDb: string | null = null;
+
+        if (!clubId) {
+          const { data: club } = await supabase
+            .from("Club")
+            .select("id, billingInterval")
+            .eq("stripeCustomerId", customerId)
+            .single();
+          clubId = club?.id ?? null;
+          billingIntervalFromDb = club?.billingInterval ?? null;
+        }
+
+        if (!clubId) break;
 
         await supabase.from("Payment").insert({
-          clubId: club.id,
+          clubId,
           stripeInvoiceId: invoice.id,
           stripePaymentIntentId:
             typeof invoice.payment_intent === "string" ? invoice.payment_intent : null,
@@ -150,7 +178,7 @@ export async function POST(request: Request) {
           currency: invoice.currency,
           status: "failed",
           description: "Subscription payment failed",
-          billingInterval: club.billingInterval ?? "month",
+          billingInterval: sub?.items.data[0]?.price?.recurring?.interval ?? billingIntervalFromDb ?? "month",
           createdAt: new Date().toISOString(),
         });
 
