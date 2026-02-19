@@ -355,6 +355,37 @@ CREATE POLICY "bookings_delete_admin"
 
 
 -- =============================================================================
+-- PAYMENT TABLE
+-- =============================================================================
+-- The Payment table records Stripe invoice/charge events for each club.
+--
+-- Write path:  Stripe webhook → getSupabaseAdminClient() (service-role key).
+--              The service-role key bypasses RLS entirely, so no INSERT/UPDATE/
+--              DELETE policies are needed for that path.
+--
+-- Read path:   GET /api/admin/subscription/payments → getSupabaseClient()
+--              (anon key + user JWT).  requireAdmin() validates the caller
+--              server-side; RLS provides a second layer by restricting SELECT
+--              to admins of the matching club only.
+--
+-- Regular members have no access to payment records at all.
+-- =============================================================================
+ALTER TABLE public."Payment" ENABLE ROW LEVEL SECURITY;
+
+-- Only club admins may read payment records for their own club.
+CREATE POLICY "payments_select_admin"
+  ON public."Payment" FOR SELECT
+  TO authenticated
+  USING (public.is_club_admin("clubId"));
+
+-- INSERT / UPDATE / DELETE are intentionally left without a policy.
+-- All writes come via the Stripe webhook which uses the service-role key and
+-- is therefore not subject to RLS.  Blocking these operations for the
+-- authenticated / anon roles is an extra safeguard against accidental or
+-- malicious direct writes.
+
+
+-- =============================================================================
 -- VERIFICATION: quick check queries to run after applying this script
 -- =============================================================================
 -- SELECT tablename, rowsecurity FROM pg_tables
