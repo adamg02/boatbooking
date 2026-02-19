@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseClient, getSupabaseAdminClient } from "@/lib/supabase";
 import { z } from "zod";
 
 const createClubSchema = z.object({
@@ -78,8 +78,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to create club" }, { status: 500 });
     }
 
+    // Use admin client for bootstrapping: creating the Admin group and assigning
+    // the user requires bypassing RLS (the user isn't an admin yet at this point).
+    const supabaseAdmin = getSupabaseAdminClient();
+
     // Create an "Admin" group for this club
-    const { data: adminGroup, error: groupError } = await supabase
+    const { data: adminGroup, error: groupError } = await supabaseAdmin
       .from("Group")
       .insert({ name: "Admin", description: "Club administrators", clubId: club.id })
       .select()
@@ -88,14 +92,14 @@ export async function POST(request: Request) {
     if (groupError || !adminGroup) {
       console.error("Create admin group error:", groupError);
       // Rollback club
-      await supabase.from("Club").delete().eq("id", club.id);
+      await supabaseAdmin.from("Club").delete().eq("id", club.id);
       return NextResponse.json({ error: "Failed to set up club" }, { status: 500 });
     }
 
     // Assign user to the club and to the Admin group (all in parallel)
     const [userUpdateResult, userGroupResult] = await Promise.all([
-      supabase.from("User").update({ clubId: club.id }).eq("id", user.id),
-      supabase.from("UserGroup").insert({ userId: user.id, groupId: adminGroup.id }),
+      supabaseAdmin.from("User").update({ clubId: club.id }).eq("id", user.id),
+      supabaseAdmin.from("UserGroup").insert({ userId: user.id, groupId: adminGroup.id }),
     ]);
 
     if (userUpdateResult.error || userGroupResult.error) {
