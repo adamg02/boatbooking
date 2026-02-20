@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { fireEvent } from "@/lib/gtag";
 
 type Tab = "create" | "join";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("join");
+
+  useEffect(() => {
+    fireEvent("onboarding_started");
+  }, []);
 
   // Create club form
   const [clubName, setClubName] = useState("");
@@ -35,8 +40,7 @@ export default function OnboardingPage() {
         setCreateError(data.error || "Failed to create club");
         return;
       }
-      router.push("/boats");
-      router.refresh();
+      router.push("/onboarding/club-created");
     } catch {
       setCreateError("An unexpected error occurred. Please try again.");
     } finally {
@@ -59,6 +63,7 @@ export default function OnboardingPage() {
         setJoinError(data.error || "Failed to join club");
         return;
       }
+      fireEvent("club_joined");
       router.push("/boats");
       router.refresh();
     } catch {

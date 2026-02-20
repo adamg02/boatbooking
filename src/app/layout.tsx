@@ -39,13 +39,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+  const isDev = process.env.NODE_ENV === "development";
 
   return (
     <html lang="en">
       <body>
         {children}
         <ToastProvider />
-        {gaId && <GoogleAnalytics gaId={gaId} />}
+        {gaId && <GoogleAnalytics gaId={gaId} debugMode={isDev} />}
       </body>
     </html>
   );

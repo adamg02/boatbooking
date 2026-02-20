@@ -39,6 +39,13 @@ export async function GET(request: Request) {
     // was installed may be missing. Upsert defensively on every sign-in.
     if (sessionData?.user) {
       const { user } = sessionData;
+
+      // Detect new accounts: created_at and last_sign_in_at are within 5 seconds
+      // of each other only on the very first sign-in.
+      const createdAt = user.created_at ? new Date(user.created_at).getTime() : 0;
+      const lastSignIn = user.last_sign_in_at ? new Date(user.last_sign_in_at).getTime() : 0;
+      const isNewUser = Math.abs(createdAt - lastSignIn) < 5000;
+
       try {
         const adminClient = getSupabaseAdminClient();
         await adminClient.from('User').upsert(
@@ -60,6 +67,23 @@ export async function GET(request: Request) {
         // Non-fatal: log and continue so the user can still sign in.
         console.error('User sync error:', syncError);
       }
+
+      // Send new users through the welcome page so a GA sign_up event fires
+      // before they reach the main app.
+      if (isNewUser) {
+        return NextResponse.redirect(`${origin}/auth/welcome`);
+      }
+
+      // Send returning users through the signed-in page so a GA login event fires.
+      const next = requestUrl.searchParams.get("next");
+      let destinationPath = '/boats';
+      if (next && isSafeRedirectUrl(next, origin)) {
+        const nextUrl = new URL(next, origin);
+        destinationPath = nextUrl.pathname + nextUrl.search;
+      }
+      const signedInUrl = new URL('/auth/signed-in', origin);
+      signedInUrl.searchParams.set('next', destinationPath);
+      return NextResponse.redirect(signedInUrl.toString());
     }
   }
 

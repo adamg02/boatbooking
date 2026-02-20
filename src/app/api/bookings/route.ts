@@ -129,7 +129,16 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(booking, { status: 201 });
+    // Check whether this is the user's very first confirmed booking
+    const { count: priorCount } = await supabase
+      .from('Booking')
+      .select('id', { count: 'exact', head: true })
+      .eq('userId', user.id)
+      .eq('status', 'CONFIRMED')
+      .neq('id', booking.id);
+    const isFirstBooking = (priorCount ?? 0) === 0;
+
+    return NextResponse.json({ ...booking, isFirstBooking }, { status: 201 });
   } catch (error) {
     console.error("Booking error:", error);
     return NextResponse.json(

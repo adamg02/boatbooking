@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { fireEvent } from "@/lib/gtag";
 
 interface SubscriptionInfo {
   tier: "free" | "paid";
@@ -101,6 +102,7 @@ export default function SubscriptionSection() {
         setError(data.error ?? "Failed to start checkout");
         return;
       }
+      fireEvent("subscription_started", { billing_interval: interval });
       window.location.href = data.url;
     } catch {
       setError("An unexpected error occurred");
@@ -119,6 +121,7 @@ export default function SubscriptionSection() {
         setError(data.error ?? "Failed to open billing portal");
         return;
       }
+      fireEvent("subscription_portal_opened");
       window.location.href = data.url;
     } catch {
       setError("An unexpected error occurred");

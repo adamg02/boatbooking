@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
+import { fireEvent } from "@/lib/gtag";
 
 interface Group {
   id: string;
@@ -136,6 +137,7 @@ export default function AdminBoatsPage() {
       });
 
       if (res.ok) {
+        fireEvent("boat_added", { boat_name: formData.name });
         await loadData();
         setCreating(false);
         setFormData({ name: "", description: "", capacity: 1, imageUrl: "", isActive: true });

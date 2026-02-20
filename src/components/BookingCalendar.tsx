@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, addDays, startOfDay, setHours, setMinutes } from "date-fns";
 import toast from "react-hot-toast";
+import { fireEvent } from "@/lib/gtag";
 
 interface Booking {
   id: string;
@@ -135,6 +136,10 @@ export default function BookingCalendar({
 
       if (response.ok) {
         toast.success("Booking confirmed!");
+        fireEvent("booking_created", { boat_id: boat.id, boat_name: boat.name });
+        if (data.isFirstBooking) {
+          fireEvent("first_booking", { boat_id: boat.id, boat_name: boat.name });
+        }
         router.refresh();
       } else {
         toast.error(data.error || "Booking failed");
@@ -156,6 +161,7 @@ export default function BookingCalendar({
 
       if (response.ok) {
         toast.success("Booking cancelled!");
+        fireEvent("booking_cancelled", { boat_id: boat.id, boat_name: boat.name });
         router.refresh();
       } else {
         const data = await response.json();
