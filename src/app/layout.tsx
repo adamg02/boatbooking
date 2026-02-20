@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import ToastProvider from "@/components/ToastProvider";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { cookies } from "next/headers";
+import { getDict, LOCALE_COOKIE } from "@/lib/locales";
 
 export const metadata: Metadata = {
   title: {
@@ -33,16 +35,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const locale = cookieStore.get(LOCALE_COOKIE)?.value;
+  const dict = getDict(locale);
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
   const isDev = process.env.NODE_ENV === "development";
 
   return (
-    <html lang="en">
+    <html lang={dict.htmlLang}>
       <body>
         {children}
         <ToastProvider />

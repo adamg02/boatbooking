@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
-import { stripe, STRIPE_PRICES } from "@/lib/stripe";
+import { stripe, getStripePrices } from "@/lib/stripe";
+import { cookies } from "next/headers";
+import { LOCALE_COOKIE } from "@/lib/locales";
 
 // POST /api/admin/subscription/checkout
 // Body: { interval: 'month' | 'year' }
@@ -15,7 +17,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "interval must be 'month' or 'year'" }, { status: 400 });
     }
 
-    const priceId = interval === "year" ? STRIPE_PRICES.yearly : STRIPE_PRICES.monthly;
+    // Detect locale from cookie to use the correct Stripe price (GBP or USD)
+    const cookieStore = await cookies();
+    const locale = cookieStore.get(LOCALE_COOKIE)?.value;
+    const stripePrices = getStripePrices(locale);
+
+    const priceId = interval === "year" ? stripePrices.yearly : stripePrices.monthly;
 
     if (!priceId) {
       return NextResponse.json(

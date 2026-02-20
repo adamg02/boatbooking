@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
+import { useLocale, formatDate } from "@/lib/locales/useLocale";
 
 interface Group {
   id: string;
@@ -48,6 +49,8 @@ export default function AdminUsersPage() {
   const [showInactive, setShowInactive] = useState(false);
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const { dateLocale } = useLocale();
 
   useEffect(() => {
     loadData();
@@ -303,9 +306,9 @@ export default function AdminUsersPage() {
 
               <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-100">
                 <div>
-                  <div>Joined: {new Date(user.createdAt).toLocaleDateString()}</div>
+                  <div>Joined: {formatDate(user.createdAt, dateLocale)}</div>
                   {user.lastLogin && (
-                    <div className="mt-0.5">Last login: {new Date(user.lastLogin).toLocaleDateString()}</div>
+                    <div className="mt-0.5">Last login: {formatDate(user.lastLogin, dateLocale)}</div>
                   )}
                 </div>
                 <button
@@ -403,10 +406,10 @@ export default function AdminUsersPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                    {user.lastLogin ? formatDate(user.lastLogin, dateLocale) : 'Never'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {new Date(user.createdAt).toLocaleDateString()}
+                    {formatDate(user.createdAt, dateLocale)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                     <button

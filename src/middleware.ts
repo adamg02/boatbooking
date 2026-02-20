@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { resolveLocale, LOCALE_COOKIE } from '@/lib/locales'
 
 // Paths that are accessible without belonging to a club
 const ONBOARDING_EXEMPT_PATHS = ['/onboarding', '/auth', '/api/clubs', '/api/stripe'];
@@ -7,11 +8,27 @@ const ONBOARDING_EXEMPT_PATHS = ['/onboarding', '/auth', '/api/clubs', '/api/str
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── Locale detection ───────────────────────────────────────────────
+  // Always re-detect from Accept-Language so that a browser language
+  // change takes effect immediately. The cookie is written on every
+  // request so server components and API routes can read it cheaply
+  // without inspecting the header themselves.
+  const detectedLocale = resolveLocale(request.headers.get("accept-language"));
+
   const response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
+
+  // Write (or refresh) the locale cookie so server components / API
+  // routes can read it via cookies(). Short max-age so it tracks the
+  // browser language closely without requiring a large payload.
+  response.cookies.set(LOCALE_COOKIE, detectedLocale, {
+    path: "/",
+    maxAge: 60 * 60 * 24, // 24 hours – re-detected on next visit
+    sameSite: "lax",
+  });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

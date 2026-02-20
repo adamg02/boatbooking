@@ -2,6 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { fireEvent } from "@/lib/gtag";
+import { getDict, LOCALE_COOKIE, type LocaleDict } from "@/lib/locales";
+
+/** Read a cookie value by name in the browser */
+function getCookieValue(name: string): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`, ""));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
 
 interface SubscriptionInfo {
   tier: "free" | "paid";
@@ -28,15 +36,15 @@ interface Payment {
   createdAt: string;
 }
 
-function formatAmount(amount: number, currency: string): string {
-  return new Intl.NumberFormat("en-GB", {
+function formatAmount(amount: number, currency: string, dateLocale: string): string {
+  return new Intl.NumberFormat(dateLocale, {
     style: "currency",
     currency: currency.toUpperCase(),
   }).format(amount / 100);
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", {
+function formatDate(iso: string, dateLocale: string): string {
+  return new Date(iso).toLocaleDateString(dateLocale, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -52,6 +60,10 @@ export default function SubscriptionSection() {
   const [checkingOut, setCheckingOut] = useState<"month" | "year" | null>(null);
   const [openingPortal, setOpeningPortal] = useState(false);
   const [showPayments, setShowPayments] = useState(false);
+
+  // Resolve locale dict once on mount (cookie is readable synchronously)
+  const dict: LocaleDict = getDict(getCookieValue(LOCALE_COOKIE));
+  const s = dict.subscription;
 
   const loadSub = useCallback(async () => {
     try {
@@ -208,13 +220,13 @@ export default function SubscriptionSection() {
             <div className="flex justify-between">
               <dt className="text-gray-500">Billing</dt>
               <dd className="text-gray-900 font-medium">
-                {sub.billingInterval === "year" ? "£9.99 / month (annual)" : "£12.99 / month"}
+                {sub.billingInterval === "year" ? s.yearlyAdminLabel : s.yearlyMonthlyLabel}
               </dd>
             </div>
             {sub.currentPeriodEnd && (
               <div className="flex justify-between">
                 <dt className="text-gray-500">Renews</dt>
-                <dd className="text-gray-900">{formatDate(sub.currentPeriodEnd)}</dd>
+                <dd className="text-gray-900">{formatDate(sub.currentPeriodEnd, dict.dateLocale)}</dd>
               </div>
             )}
             <div className="flex justify-between">
@@ -234,7 +246,7 @@ export default function SubscriptionSection() {
               <div>
                 <p className="text-sm font-semibold text-gray-900">Monthly</p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">
-                  £12.99 <span className="text-sm font-normal text-gray-500">/ month</span>
+                  {s.monthlyDisplayPrice} <span className="text-sm font-normal text-gray-500">/ month</span>
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">Billed monthly, cancel any time</p>
               </div>
@@ -256,9 +268,9 @@ export default function SubscriptionSection() {
               <div>
                 <p className="text-sm font-semibold text-gray-900">Annual</p>
                 <p className="text-2xl font-bold text-gray-900 mt-1">
-                  £9.99 <span className="text-sm font-normal text-gray-500">/ month</span>
+                  {s.yearlyDisplayPrice} <span className="text-sm font-normal text-gray-500">/ month</span>
                 </p>
-                <p className="text-xs text-gray-500 mt-0.5">Billed £119.88 / year</p>
+                <p className="text-xs text-gray-500 mt-0.5">{s.yearlyBilledAs}</p>
               </div>
               <button
                 type="button"
@@ -322,18 +334,18 @@ export default function SubscriptionSection() {
                     {payments.map((p) => (
                       <tr key={p.id} className="hover:bg-gray-50">
                         <td className="py-2.5 px-2 text-gray-700 whitespace-nowrap">
-                          {formatDate(p.createdAt)}
+                          {formatDate(p.createdAt, dict.dateLocale)}
                         </td>
                         <td className="py-2.5 px-2 text-gray-700">
                           {p.description ?? (p.billingInterval === "year" ? "Annual subscription" : "Monthly subscription")}
                           {p.periodStart && p.periodEnd && (
                             <span className="ml-1 text-xs text-gray-400">
-                              ({formatDate(p.periodStart)} – {formatDate(p.periodEnd)})
+                              ({formatDate(p.periodStart, dict.dateLocale)} – {formatDate(p.periodEnd, dict.dateLocale)})
                             </span>
                           )}
                         </td>
                         <td className="py-2.5 px-2 text-right text-gray-900 font-medium whitespace-nowrap">
-                          {formatAmount(p.amount, p.currency)}
+                          {formatAmount(p.amount, p.currency, dict.dateLocale)}
                         </td>
                         <td className="py-2.5 px-2 text-center">
                           <span

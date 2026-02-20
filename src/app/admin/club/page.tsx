@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
+import { useLocale, formatDate } from "@/lib/locales/useLocale";
 
 interface Club {
   id: string;
@@ -18,6 +19,8 @@ export default function AdminClubPage() {
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const { dateLocale } = useLocale();
 
   // Edit mode state
   const [editing, setEditing] = useState(false);
@@ -233,7 +236,7 @@ export default function AdminClubPage() {
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Created</dt>
                     <dd className="mt-1 text-gray-900">
-                      {new Date(club.createdAt).toLocaleDateString("en-GB", {
+                      {new Date(club.createdAt).toLocaleDateString(dateLocale, {
                         day: "numeric",
                         month: "long",
                         year: "numeric",

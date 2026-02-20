@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import type { Locale } from "@/lib/locales";
 
 let _stripe: Stripe | null = null;
 
@@ -22,10 +23,25 @@ export const stripe = new Proxy({} as Stripe, {
 
 export const FREE_TIER_BOAT_LIMIT = 9;
 
-export const STRIPE_PRICES = {
+/** Stripe price IDs for GBP (UK) – set in .env */
+export const STRIPE_PRICES_GBP = {
   monthly: process.env.STRIPE_MONTHLY_PRICE_ID!,
   yearly: process.env.STRIPE_YEARLY_PRICE_ID!,
 } as const;
+
+/** Stripe price IDs for USD (US) – set in .env; falls back to GBP IDs if unset */
+export const STRIPE_PRICES_USD = {
+  monthly: process.env.STRIPE_MONTHLY_PRICE_ID_US ?? process.env.STRIPE_MONTHLY_PRICE_ID!,
+  yearly: process.env.STRIPE_YEARLY_PRICE_ID_US ?? process.env.STRIPE_YEARLY_PRICE_ID!,
+} as const;
+
+/** @deprecated Use getStripePrices(locale) */
+export const STRIPE_PRICES = STRIPE_PRICES_GBP;
+
+/** Return the correct Stripe price IDs for the given locale */
+export function getStripePrices(locale: Locale | string | undefined) {
+  return locale === "en-US" ? STRIPE_PRICES_USD : STRIPE_PRICES_GBP;
+}
 
 export type BillingInterval = "month" | "year";
 
