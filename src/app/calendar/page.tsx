@@ -237,77 +237,83 @@ export default function CalendarPage() {
   return (
     <div className="min-h-screen bg-gray-900">
       {/* ── toolbar ──────────────────────────────────────────────────────────── */}
-      <DarkNavBar title="Bookings Calendar" isAdmin={isAdmin}>
-        <button
-          onClick={goToday}
-          className="rounded border border-gray-600 bg-gray-700 px-3 py-1 text-sm font-medium text-gray-200 hover:bg-gray-600"
-        >
-          Today
-        </button>
-
-        <div className="flex items-center gap-1">
+      <DarkNavBar
+        title="Bookings Calendar"
+        isAdmin={isAdmin}
+        topRowEnd={
+          <>
+            <span className="text-xs text-gray-500">Sort:</span>
+            <button
+              onClick={() => setSortBy("boat")}
+              className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+                sortBy === "boat"
+                  ? "bg-indigo-600 text-white"
+                  : "border border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600"
+              }`}
+            >
+              Boat
+            </button>
+            <button
+              onClick={() => setSortBy("user")}
+              className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+                sortBy === "user"
+                  ? "bg-indigo-600 text-white"
+                  : "border border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600"
+              }`}
+            >
+              User
+            </button>
+          </>
+        }
+      >
+        {/* Navigation row — pushed to order 9999 (order-last) on mobile so it wraps below
+            the title + sort/burger row; resets to default order on desktop */}
+        <div className="flex items-center gap-2 order-last md:order-none w-full md:w-auto">
           <button
-            onClick={prevWeek}
-            aria-label="Previous"
-            className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-gray-100"
+            onClick={goToday}
+            className="rounded border border-gray-600 bg-gray-700 px-3 py-1 text-sm font-medium text-gray-200 hover:bg-gray-600"
           >
-            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
+            Today
           </button>
-          <button
-            onClick={nextWeek}
-            aria-label="Next"
-            className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-gray-100"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-        </div>
 
-        <span className="text-sm font-medium text-gray-300">{rangeLabel}</span>
-
-        {/* push sort controls to the right */}
-        <div className="flex-1" />
-
-        {/* sort controls */}
-        <span className="text-xs text-gray-500">Sort:</span>
-        <button
-          onClick={() => setSortBy("boat")}
-          className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
-            sortBy === "boat"
-              ? "bg-indigo-600 text-white"
-              : "border border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600"
-          }`}
-        >
-          Boat
-        </button>
-        <button
-          onClick={() => setSortBy("user")}
-          className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
-            sortBy === "user"
-              ? "bg-indigo-600 text-white"
-              : "border border-gray-600 bg-gray-700 text-gray-300 hover:bg-gray-600"
-          }`}
-        >
-          User
-        </button>
-
-        {loading && (
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-400" />
-            Loading…
+          <div className="flex items-center gap-1">
+            <button
+              onClick={prevWeek}
+              aria-label="Previous"
+              className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-gray-100"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={nextWeek}
+              aria-label="Next"
+              className="rounded p-1 text-gray-400 hover:bg-gray-700 hover:text-gray-100"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
           </div>
-        )}
+
+          <span className="text-sm font-medium text-gray-300">{rangeLabel}</span>
+
+          {loading && (
+            <div className="ml-auto flex items-center gap-1 text-xs text-gray-500">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-400" />
+              Loading…
+            </div>
+          )}
+        </div>
       </DarkNavBar>
 
       {/* ── calendar grid ────────────────────────────────────────────────────── */}
