@@ -11,9 +11,11 @@ interface DarkNavBarProps {
   isAdmin?: boolean;
   /** Optional extra content rendered between the title and the burger button */
   children?: React.ReactNode;
+  /** Optional content rendered in the same row as the burger button (pushed to the right) */
+  topRowEnd?: React.ReactNode;
 }
 
-export default function DarkNavBar({ title, subtitle, isAdmin, children }: DarkNavBarProps) {
+export default function DarkNavBar({ title, subtitle, isAdmin, children, topRowEnd }: DarkNavBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = getSupabaseClientComponent();
@@ -58,8 +60,10 @@ export default function DarkNavBar({ title, subtitle, isAdmin, children }: DarkN
         {/* Slot for page-specific controls */}
         {children}
 
-        {/* Burger menu — always on the right */}
-        <div className="ml-auto relative" ref={menuRef}>
+        {/* Burger menu — always on the right; topRowEnd appears alongside it */}
+        <div className="ml-auto flex items-center gap-2">
+          {topRowEnd}
+          <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((o) => !o)}
             aria-label="Open navigation menu"
@@ -129,6 +133,7 @@ export default function DarkNavBar({ title, subtitle, isAdmin, children }: DarkN
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>
