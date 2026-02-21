@@ -13,6 +13,13 @@ export async function middleware(request: NextRequest) {
   // /management pages and /api/management routes are restricted to
   // IP addresses in the ManagementIpAllowlist table (or bypass key).
   if (pathname.startsWith('/management') || pathname.startsWith('/api/management')) {
+    const { getClientIp } = await import('@/lib/management');
+    const detectedIp = getClientIp(request);
+    console.log('[management-gate] Detected IP:', detectedIp);
+    console.log('[management-gate] x-forwarded-for:', request.headers.get('x-forwarded-for'));
+    console.log('[management-gate] x-real-ip:', request.headers.get('x-real-ip'));
+    console.log('[management-gate] cf-connecting-ip:', request.headers.get('cf-connecting-ip'));
+
     const allowed = await checkManagementAccess(request);
     if (!allowed) {
       // Return 403 for API calls, redirect to a simple error page for browser navigation
