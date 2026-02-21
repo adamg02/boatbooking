@@ -24,15 +24,8 @@ export function getClientIp(request: NextRequest): string {
 
 /**
  * Check whether the given IP is on the management IP allowlist.
- *
- * If the allowlist table is empty the function returns true only when
- * the caller supplies the MANAGEMENT_BYPASS_KEY env var as a bearer
- * token (useful for the very first login / disaster recovery).
  */
-export async function isAllowedManagementIp(
-  ip: string,
-  bypassKey?: string | null
-): Promise<boolean> {
+export async function isAllowedManagementIp(ip: string): Promise<boolean> {
   try {
     const supabase = getSupabaseAdminClient();
 
@@ -48,13 +41,6 @@ export async function isAllowedManagementIp(
 
     const allowedIps: string[] = (data ?? []).map((row: any) => row.ip as string);
 
-    // If the allowlist is empty, fall back to bypass key check
-    if (allowedIps.length === 0) {
-      const envKey = process.env.MANAGEMENT_BYPASS_KEY;
-      if (!envKey) return false;
-      return bypassKey === envKey;
-    }
-
     return allowedIps.includes(ip);
   } catch (err) {
     console.error("isAllowedManagementIp error:", err);
@@ -64,16 +50,10 @@ export async function isAllowedManagementIp(
 
 /**
  * Convenience wrapper that extracts the IP from a request and checks it.
- * Also checks the Authorization: Bearer <MANAGEMENT_BYPASS_KEY> header so
- * that the initial setup request (before any IP is added) can still work.
  */
 export async function checkManagementAccess(
   request: NextRequest
 ): Promise<boolean> {
   const ip = getClientIp(request);
-  const authHeader = request.headers.get("authorization") ?? "";
-  const bearerKey = authHeader.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : null;
-  return isAllowedManagementIp(ip, bearerKey);
+  return isAllowedManagementIp(ip);
 }
