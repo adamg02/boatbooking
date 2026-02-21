@@ -89,8 +89,6 @@ export default function IpAllowlistPage() {
           <h2 className="text-3xl font-bold text-white">IP Allowlist</h2>
           <p className="mt-1 text-gray-400">
             Only requests originating from these IP addresses can access the management console.
-            If the list is empty, access is controlled by the{" "}
-            <code className="text-indigo-400">MANAGEMENT_BYPASS_KEY</code> environment variable.
           </p>
         </div>
 
@@ -146,7 +144,7 @@ export default function IpAllowlistPage() {
 
           {!loading && items.length === 0 && (
             <div className="text-gray-500 text-center py-12">
-              No IPs added yet. The allowlist is empty — only the bypass key grants access.
+              No IPs added yet. All management access will be blocked until an IP is added.
             </div>
           )}
 
