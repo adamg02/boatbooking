@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fireEvent } from "@/lib/gtag";
+import SignOutButton from "@/components/SignOutButton";
 
 type Tab = "create" | "join";
 
@@ -219,6 +220,10 @@ export default function OnboardingPage() {
         <p className="mt-6 text-center text-xs text-gray-500 dark:text-gray-500">
           Need help? Contact your club administrator for a join code.
         </p>
+
+        <div className="mt-4 flex justify-center">
+          <SignOutButton />
+        </div>
       </div>
     </div>
   );
