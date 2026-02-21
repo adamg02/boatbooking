@@ -175,21 +175,28 @@ export default function BookingCalendar({
   };
 
   const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
   const SWIPE_THRESHOLD = 50;
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
     touchStartX.current = null;
-    if (Math.abs(delta) < SWIPE_THRESHOLD) return;
+    touchStartY.current = null;
+
+    // Ignore if movement is more vertical than horizontal (user is scrolling)
+    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+    if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
 
     const today = startOfDay(new Date());
     const lastDay = addDays(today, BOOKING_WINDOW_DAYS - 1);
-    if (delta < 0) {
+    if (deltaX < 0) {
       // Swipe left → next day
       const next = addDays(startOfDay(selectedDate), 1);
       if (next <= lastDay) setSelectedDate(next);
@@ -198,6 +205,11 @@ export default function BookingCalendar({
       const prev = addDays(startOfDay(selectedDate), -1);
       if (prev >= today) setSelectedDate(prev);
     }
+  };
+
+  const handleTouchCancel = () => {
+    touchStartX.current = null;
+    touchStartY.current = null;
   };
 
   const nextDays = Array.from({ length: BOOKING_WINDOW_DAYS }, (_, i) => addDays(new Date(), i));
@@ -312,6 +324,8 @@ export default function BookingCalendar({
       <div
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
+        style={{ touchAction: "pan-y" }}
       >
       <div
         className={`mb-6 rounded-lg border border-gray-200 dark:border-gray-700 p-4 ${
