@@ -1,12 +1,27 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveLocale, LOCALE_COOKIE } from '@/lib/locales'
+import { checkManagementAccess } from '@/lib/management'
 
 // Paths that are accessible without belonging to a club
-const ONBOARDING_EXEMPT_PATHS = ['/onboarding', '/auth', '/api/clubs', '/api/stripe'];
+const ONBOARDING_EXEMPT_PATHS = ['/onboarding', '/auth', '/api/clubs', '/api/stripe', '/management', '/api/management'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ── Management IP gate ──────────────────────────────────────────────
+  // /management pages and /api/management routes are restricted to
+  // IP addresses in the ManagementIpAllowlist table (or bypass key).
+  if (pathname.startsWith('/management') || pathname.startsWith('/api/management')) {
+    const allowed = await checkManagementAccess(request);
+    if (!allowed) {
+      // Return 403 for API calls, redirect to a simple error page for browser navigation
+      if (pathname.startsWith('/api/management')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL('/auth/signin', request.url));
+    }
+  }
 
   // ── Locale detection ───────────────────────────────────────────────
   // Always re-detect from Accept-Language so that a browser language
