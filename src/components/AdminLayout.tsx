@@ -182,10 +182,10 @@ export default function AdminLayout({
                   Book a Boat
                 </Link>
                 <Link
-                  href="/daily-bookings"
+                  href="/calendar"
                   className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"
                 >
-                  Boat Bookings
+                  Bookings Calendar
                 </Link>
               </div>
             </nav>

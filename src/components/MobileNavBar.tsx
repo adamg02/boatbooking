@@ -82,12 +82,12 @@ export default function MobileNavBar({ isAdmin, title, subtitle }: NavBarProps) 
                 Book a Boat
               </Link>
             )}
-            {pathname !== "/daily-bookings" && (
+            {pathname !== "/calendar" && (
               <Link
-                href="/daily-bookings"
+                href="/calendar"
                 className="text-xs sm:text-sm bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
               >
-                Boat Bookings
+                Bookings Calendar
               </Link>
             )}
             {isAdmin && (
@@ -119,12 +119,12 @@ export default function MobileNavBar({ isAdmin, title, subtitle }: NavBarProps) 
                   Book a Boat
                 </Link>
               )}
-              {pathname !== "/daily-bookings" && (
+              {pathname !== "/calendar" && (
                 <Link
-                  href="/daily-bookings"
+                  href="/calendar"
                   className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Boat Bookings
+                  Bookings Calendar
                 </Link>
               )}
               {isAdmin && (

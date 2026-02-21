@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import BoatsList from "@/components/BoatsList";
 import { isAdmin, getUserClub } from "@/lib/admin";
 import { format } from "date-fns";
-import MobileNavBar from "@/components/MobileNavBar";
+import DarkNavBar from "@/components/DarkNavBar";
 import Link from "next/link";
 
 export default async function BoatsPage() {
@@ -78,8 +78,8 @@ export default async function BoatsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <MobileNavBar 
-        title="Available Boats" 
+      <DarkNavBar
+        title="Book a Boat"
         subtitle={userData?.name ? `Welcome, ${userData.name}${adminCheck ? ' (Admin)' : ''}` : undefined}
         isAdmin={adminCheck}
       />
