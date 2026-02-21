@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, addDays, startOfDay, setHours, setMinutes } from "date-fns";
 import toast from "react-hot-toast";
@@ -174,6 +174,32 @@ export default function BookingCalendar({
     }
   };
 
+  const touchStartX = useRef<number | null>(null);
+  const SWIPE_THRESHOLD = 50;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(delta) < SWIPE_THRESHOLD) return;
+
+    const today = startOfDay(new Date());
+    const lastDay = addDays(today, BOOKING_WINDOW_DAYS - 1);
+    if (delta < 0) {
+      // Swipe left → next day
+      const next = addDays(startOfDay(selectedDate), 1);
+      if (next <= lastDay) setSelectedDate(next);
+    } else {
+      // Swipe right → previous day
+      const prev = addDays(startOfDay(selectedDate), -1);
+      if (prev >= today) setSelectedDate(prev);
+    }
+  };
+
   const nextDays = Array.from({ length: BOOKING_WINDOW_DAYS }, (_, i) => addDays(new Date(), i));
   const { start: dayStart, end: dayEnd } = getDayBounds(selectedDate);
   const fullDayUserBooking = getExactUserBooking(dayStart, dayEnd);
@@ -284,6 +310,10 @@ export default function BookingCalendar({
       </div>
 
       <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+      <div
         className={`mb-6 rounded-lg border border-gray-200 dark:border-gray-700 p-4 ${
           highlightId === `full-day-${format(dayStart, "yyyy-MM-dd")}`
             ? "animate-pulse ring-2 ring-blue-300"
@@ -392,6 +422,7 @@ export default function BookingCalendar({
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );
