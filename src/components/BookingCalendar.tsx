@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useSwipe } from "@/hooks/useSwipe";
 import { useRouter } from "next/navigation";
 import { format, addDays, startOfDay, setHours, setMinutes } from "date-fns";
 import toast from "react-hot-toast";
@@ -174,43 +175,19 @@ export default function BookingCalendar({
     }
   };
 
-  const touchStartX = useRef<number | null>(null);
-  const touchStartY = useRef<number | null>(null);
-  const SWIPE_THRESHOLD = 50;
+  const today = startOfDay(new Date());
+  const lastDay = addDays(today, BOOKING_WINDOW_DAYS - 1);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null || touchStartY.current === null) return;
-    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
-    touchStartX.current = null;
-    touchStartY.current = null;
-
-    // Ignore if movement is more vertical than horizontal (user is scrolling)
-    if (Math.abs(deltaY) > Math.abs(deltaX)) return;
-    if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
-
-    const today = startOfDay(new Date());
-    const lastDay = addDays(today, BOOKING_WINDOW_DAYS - 1);
-    if (deltaX < 0) {
-      // Swipe left → next day
+  const swipeRef = useSwipe({
+    onSwipeLeft: useCallback(() => {
       const next = addDays(startOfDay(selectedDate), 1);
       if (next <= lastDay) setSelectedDate(next);
-    } else {
-      // Swipe right → previous day
+    }, [selectedDate, lastDay]),
+    onSwipeRight: useCallback(() => {
       const prev = addDays(startOfDay(selectedDate), -1);
       if (prev >= today) setSelectedDate(prev);
-    }
-  };
-
-  const handleTouchCancel = () => {
-    touchStartX.current = null;
-    touchStartY.current = null;
-  };
+    }, [selectedDate, today]),
+  });
 
   const nextDays = Array.from({ length: BOOKING_WINDOW_DAYS }, (_, i) => addDays(new Date(), i));
   const { start: dayStart, end: dayEnd } = getDayBounds(selectedDate);
@@ -322,9 +299,7 @@ export default function BookingCalendar({
       </div>
 
       <div
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchCancel}
+        ref={swipeRef}
         style={{ touchAction: "pan-y" }}
       >
       <div
