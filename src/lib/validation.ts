@@ -30,7 +30,7 @@ const imageUrlField = z.preprocess(
 );
 
 export const updateBoatSchema = z.object({
-  boatId: z.string().min(1, 'Boat ID is required'),
+  boatId: z.string().uuid('Invalid boat ID format'),
   name: z.string().min(1, 'Boat name is required').max(100, 'Boat name too long'),
   description: z.string().max(500, 'Description too long').nullable().optional(),
   capacity: z.number().int().min(1).max(100).optional(),
@@ -50,7 +50,7 @@ export const createBoatSchema = z.object({
 
 // Admin user validation
 export const updateUserSchema = z.object({
-  userId: z.string().min(1, 'User ID is required'),
+  userId: z.string().uuid('Invalid user ID format'),
   groupIds: z.array(z.string().min(1, 'Invalid group ID')).optional(),
   isActive: z.boolean().optional(),
 });
@@ -73,7 +73,7 @@ export const dateQuerySchema = z.object({
 });
 
 export const uuidQuerySchema = z.object({
-  id: z.string().min(1, 'ID is required'),
+  id: z.string().uuid('Invalid ID format — must be a UUID'),
 });
 
 /**

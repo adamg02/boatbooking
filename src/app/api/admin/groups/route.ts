@@ -1,6 +1,22 @@
 import { NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
+import { z } from "zod";
+
+const idArray = z.array(z.string().uuid("Invalid ID format")).optional().default([]);
+
+const createGroupSchema = z.object({
+  name: z.string().min(1, "Group name is required").max(100, "Group name too long").transform(s => s.trim()),
+  userIds: idArray,
+  boatIds: idArray,
+});
+
+const updateGroupSchema = z.object({
+  groupId: z.string().uuid("Invalid group ID"),
+  name: z.string().min(1, "Group name is required").max(100, "Group name too long").transform(s => s.trim()),
+  userIds: idArray,
+  boatIds: idArray,
+});
 
 // GET all groups with boat/user counts (scoped to the admin's club)
 export async function GET() {
@@ -41,21 +57,22 @@ export async function POST(request: Request) {
   try {
     const adminUser = await requireAdmin();
     const body = await request.json();
-    const { name, userIds = [], boatIds = [] } = body;
 
-    if (!name?.trim()) {
+    const validation = createGroupSchema.safeParse(body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Group name is required" },
+        { error: "Invalid input", details: validation.error.errors.map(e => e.message) },
         { status: 400 }
       );
     }
 
+    const { name, userIds, boatIds } = validation.data;
     const supabase = await getSupabaseClient();
 
     // Create the group
     const { data: group, error: createError } = await supabase
       .from('Group')
-      .insert({ name: name.trim(), clubId: adminUser.clubId })
+      .insert({ name, clubId: adminUser.clubId })
       .select()
       .single();
 
@@ -114,21 +131,34 @@ export async function PUT(request: Request) {
   try {
     const adminUser = await requireAdmin();
     const body = await request.json();
-    const { groupId, name, userIds = [], boatIds = [] } = body;
 
-    if (!groupId || !name?.trim()) {
+    const validation = updateGroupSchema.safeParse(body);
+    if (!validation.success) {
       return NextResponse.json(
-        { error: "Group ID and name are required" },
+        { error: "Invalid input", details: validation.error.errors.map(e => e.message) },
         { status: 400 }
       );
     }
 
+    const { groupId, name, userIds, boatIds } = validation.data;
     const supabase = await getSupabaseClient();
+
+    // Verify the group belongs to the admin's club before mutating
+    const { data: existingGroup } = await supabase
+      .from('Group')
+      .select('id')
+      .eq('id', groupId)
+      .eq('clubId', adminUser.clubId)
+      .single();
+
+    if (!existingGroup) {
+      return NextResponse.json({ error: "Group not found" }, { status: 404 });
+    }
 
     // Update group name
     const { error: updateError } = await supabase
       .from('Group')
-      .update({ name: name.trim() })
+      .update({ name })
       .eq('id', groupId);
 
     if (updateError) {
@@ -189,12 +219,17 @@ export async function DELETE(request: Request) {
 
     const supabase = await getSupabaseClient();
 
-    // Check if it's the admin group
+    // Verify the group belongs to the admin's club before operating
     const { data: group } = await supabase
       .from('Group')
-      .select('name')
+      .select('name, clubId')
       .eq('id', groupId)
+      .eq('clubId', adminUser.clubId)
       .single();
+
+    if (!group) {
+      return NextResponse.json({ error: "Group not found" }, { status: 404 });
+    }
 
     if (group?.name.toLowerCase() === 'admin') {
       return NextResponse.json(

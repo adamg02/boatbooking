@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
+import { randomBytes } from "node:crypto";
 
 function generateJoinCode(): string {
+  // Cryptographically secure 8-character alphanumeric code
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < 8; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
+  const bytes = randomBytes(8);
+  return Array.from(bytes)
+    .map((b) => chars[b % chars.length])
+    .join("");
 }
 
 // GET /api/admin/club - Get the current club settings

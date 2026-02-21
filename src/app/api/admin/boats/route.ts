@@ -82,7 +82,8 @@ export async function POST(request: Request) {
         imageUrl,
         isActive: isActive !== undefined ? isActive : true,
       })
-      .eq('id', boatId);
+      .eq('id', boatId)
+      .eq('clubId', adminUser.clubId); // scope to admin's club — prevents cross-club IDOR
 
     if (updateError) {
       console.error('Update boat error:', updateError);

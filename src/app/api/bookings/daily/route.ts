@@ -60,7 +60,7 @@ export async function GET(request: Request) {
     const { data: bookings, error } = await supabase
       .from("Booking")
       .select(
-        "*, user:User(id, name, email), boat:Boat(id, name)"
+        "*, user:User(id, name), boat:Boat(id, name)"
       )
       .eq("status", "CONFIRMED")
       .in("boatId", boatIds.length > 0 ? boatIds : ['__none__'])

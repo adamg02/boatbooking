@@ -24,6 +24,7 @@ export async function GET(
         )
       `)
       .eq('id', id)
+      .eq('clubId', adminUser.clubId)
       .single();
 
     if (error) {

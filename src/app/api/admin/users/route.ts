@@ -61,6 +61,18 @@ export async function POST(request: Request) {
     
     const { userId, groupIds, isActive } = validation.data;
 
+    // Verify the target user belongs to the admin's club — prevents cross-club IDOR
+    const { data: targetUser } = await supabase
+      .from('User')
+      .select('clubId')
+      .eq('id', userId)
+      .eq('clubId', adminUser.clubId)
+      .single();
+
+    if (!targetUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
     // If isActive is provided, update user status
     if (typeof isActive === 'boolean') {
       const { error: updateError } = await supabase

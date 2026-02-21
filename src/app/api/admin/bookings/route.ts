@@ -66,7 +66,7 @@ export async function DELETE(request: Request) {
       .select(`
         *,
         user:User(id, name, email),
-        boat:Boat(id, name)
+        boat:Boat(id, name, clubId)
       `)
       .eq('id', bookingId)
       .single();
@@ -77,6 +77,11 @@ export async function DELETE(request: Request) {
         { error: "Booking not found" },
         { status: 404 }
       );
+    }
+
+    // Verify the booking belongs to a boat in the admin's club — prevents cross-club IDOR
+    if (booking.boat?.clubId !== adminUser.clubId) {
+      return NextResponse.json({ error: "Booking not found" }, { status: 404 });
     }
 
     // Get admin user details

@@ -24,8 +24,9 @@ export async function GET(request: Request) {
 
     const startDate = startOfDay(parseISO(startParam));
     const days = Number(daysParam);
+    const MAX_DAYS = 90; // cap to prevent oversized DB queries
 
-    if (Number.isNaN(startDate.getTime()) || !Number.isFinite(days) || days <= 0) {
+    if (Number.isNaN(startDate.getTime()) || !Number.isFinite(days) || days <= 0 || days > MAX_DAYS) {
       return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
     }
 

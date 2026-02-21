@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseClient, getSupabaseAdminClient } from "@/lib/supabase";
 import { z } from "zod";
+import { randomBytes } from "node:crypto";
 
 const createClubSchema = z.object({
   name: z.string().min(2, "Club name must be at least 2 characters").max(100, "Club name too long"),
@@ -9,12 +10,12 @@ const createClubSchema = z.object({
 
 function generateJoinCode(): string {
   // 8 character alphanumeric join code (uppercase)
+  // Uses cryptographically secure randomness (crypto.randomBytes)
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // omit ambiguous chars
-  let code = "";
-  for (let i = 0; i < 8; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
+  const bytes = randomBytes(8);
+  return Array.from(bytes)
+    .map((b) => chars[b % chars.length])
+    .join("");
 }
 
 // POST /api/clubs - Create a new club; the creator becomes the Admin
