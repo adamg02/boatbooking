@@ -18,7 +18,11 @@ interface ClubRow {
   openBookings: number;
   totalPaidPence: number;
   firstPaymentAt: string | null;
+  lastBookingAt: string | null;
 }
+
+type SortKey = keyof ClubRow;
+type SortDir = "asc" | "desc";
 
 function formatCurrency(pence: number): string {
   return new Intl.NumberFormat("en-GB", {
@@ -37,6 +41,23 @@ function formatDate(iso: string | null): string {
   });
 }
 
+function timeAgo(iso: string | null): string {
+  if (!iso) return "—";
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 365) {
+    const months = Math.floor(days / 30.44);
+    if (months < 1) return `${days}d ago`;
+    return `${months}mo ago`;
+  }
+  return `${Math.floor(days / 365.25)}y ago`;
+}
+
 const tierBadge: Record<string, string> = {
   free: "bg-gray-700 text-gray-200",
   pro: "bg-indigo-700 text-indigo-100",
@@ -50,11 +71,18 @@ const statusBadge: Record<string, string> = {
   canceled: "bg-gray-700 text-gray-300",
 };
 
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  if (!active) return <span className="ml-1 opacity-30">↕</span>;
+  return <span className="ml-1">{dir === "asc" ? "↑" : "↓"}</span>;
+}
+
 export default function ManagementClubsPage() {
   const [clubs, setClubs] = useState<ClubRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("createdAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   useEffect(() => {
     fetch("/api/management/clubs")
@@ -67,9 +95,37 @@ export default function ManagementClubsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = clubs.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
+  function handleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  const filtered = clubs
+    .filter((c) => c.name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (av === null || av === undefined) return sortDir === "asc" ? 1 : -1;
+      if (bv === null || bv === undefined) return sortDir === "asc" ? -1 : 1;
+      let cmp = 0;
+      if (typeof av === "number" && typeof bv === "number") {
+        cmp = av - bv;
+      } else {
+        cmp = String(av).localeCompare(String(bv));
+      }
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+
+  function thProps(key: SortKey, className = "") {
+    return {
+      className: `px-4 py-3 cursor-pointer select-none hover:text-white transition-colors ${className}`,
+      onClick: () => handleSort(key),
+    };
+  }
 
   return (
     <ManagementLayout>
@@ -101,38 +157,20 @@ export default function ManagementClubsPage() {
         )}
 
         {!loading && !error && filtered.length > 0 && (
-          <div className="overflow-x-auto rounded-lg border border-gray-800">
-            <table className="min-w-full text-sm">
-              <thead className="bg-gray-800 text-gray-400 uppercase text-xs tracking-wider">
-                <tr>
-                  <th className="px-4 py-3 text-left">Club</th>
-                  <th className="px-4 py-3 text-left">Joined</th>
-                  <th className="px-4 py-3 text-right">Users</th>
-                  <th className="px-4 py-3 text-right">Bookings</th>
-                  <th className="px-4 py-3 text-right">Open</th>
-                  <th className="px-4 py-3 text-left">Plan</th>
-                  <th className="px-4 py-3 text-left">Sub Status</th>
-                  <th className="px-4 py-3 text-left">Sub Started</th>
-                  <th className="px-4 py-3 text-left">Period Ends</th>
-                  <th className="px-4 py-3 text-right">Revenue</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-800 bg-gray-900">
-                {filtered.map((club) => (
-                  <tr key={club.id} className="hover:bg-gray-800/60 transition-colors">
-                    <td className="px-4 py-3 text-white font-medium whitespace-nowrap">
-                      {club.name}
-                      <span className="ml-2 text-xs text-gray-500 font-mono">
-                        {club.joinCode}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
-                      {formatDate(club.createdAt)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-200">{club.activeUsers}</td>
-                    <td className="px-4 py-3 text-right text-gray-200">{club.totalBookings}</td>
-                    <td className="px-4 py-3 text-right text-gray-200">{club.openBookings}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
+          <>
+            {/* Mobile card layout */}
+            <div className="flex flex-col gap-4 md:hidden">
+              {filtered.map((club) => (
+                <div
+                  key={club.id}
+                  className="rounded-lg border border-gray-800 bg-gray-900 p-4 space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-white font-semibold">{club.name}</p>
+                      <p className="text-xs text-gray-500 font-mono mt-0.5">{club.joinCode}</p>
+                    </div>
+                    <div className="flex gap-1 flex-wrap justify-end">
                       <span
                         className={`inline-block px-2 py-0.5 rounded text-xs font-semibold uppercase ${
                           tierBadge[club.subscriptionTier] ?? "bg-gray-700 text-gray-200"
@@ -140,9 +178,7 @@ export default function ManagementClubsPage() {
                       >
                         {club.subscriptionTier}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {club.subscriptionStatus ? (
+                      {club.subscriptionStatus && (
                         <span
                           className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
                             statusBadge[club.subscriptionStatus] ?? "bg-gray-700 text-gray-200"
@@ -150,24 +186,124 @@ export default function ManagementClubsPage() {
                         >
                           {club.subscriptionStatus}
                         </span>
-                      ) : (
-                        <span className="text-gray-600">—</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
-                      {formatDate(club.firstPaymentAt)}
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
-                      {formatDate(club.subscriptionCurrentPeriodEnd)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-gray-200 font-mono whitespace-nowrap">
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    <span className="text-gray-500">Joined</span>
+                    <span className="text-gray-300 text-right">{formatDate(club.createdAt)}</span>
+                    <span className="text-gray-500">Users</span>
+                    <span className="text-gray-300 text-right">{club.activeUsers}</span>
+                    <span className="text-gray-500">Bookings</span>
+                    <span className="text-gray-300 text-right">{club.totalBookings}</span>
+                    <span className="text-gray-500">Open</span>
+                    <span className="text-gray-300 text-right">{club.openBookings}</span>
+                    <span className="text-gray-500">Last Booking</span>
+                    <span className="text-gray-300 text-right">{timeAgo(club.lastBookingAt)}</span>
+                    <span className="text-gray-500">Revenue</span>
+                    <span className="text-gray-300 text-right font-mono">
                       {formatCurrency(club.totalPaidPence)}
-                    </td>
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-800">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-800 text-gray-400 uppercase text-xs tracking-wider">
+                  <tr>
+                    <th {...thProps("name", "text-left")}>
+                      Club <SortIcon active={sortKey === "name"} dir={sortDir} />
+                    </th>
+                    <th {...thProps("createdAt", "text-left")}>
+                      Joined <SortIcon active={sortKey === "createdAt"} dir={sortDir} />
+                    </th>
+                    <th {...thProps("activeUsers", "text-right")}>
+                      Users <SortIcon active={sortKey === "activeUsers"} dir={sortDir} />
+                    </th>
+                    <th {...thProps("totalBookings", "text-right")}>
+                      Bookings <SortIcon active={sortKey === "totalBookings"} dir={sortDir} />
+                    </th>
+                    <th {...thProps("openBookings", "text-right")}>
+                      Open <SortIcon active={sortKey === "openBookings"} dir={sortDir} />
+                    </th>
+                    <th {...thProps("lastBookingAt", "text-left")}>
+                      Last Booking <SortIcon active={sortKey === "lastBookingAt"} dir={sortDir} />
+                    </th>
+                    <th {...thProps("subscriptionTier", "text-left")}>
+                      Plan <SortIcon active={sortKey === "subscriptionTier"} dir={sortDir} />
+                    </th>
+                    <th {...thProps("subscriptionStatus", "text-left")}>
+                      Sub Status <SortIcon active={sortKey === "subscriptionStatus"} dir={sortDir} />
+                    </th>
+                    <th {...thProps("firstPaymentAt", "text-left")}>
+                      Sub Started <SortIcon active={sortKey === "firstPaymentAt"} dir={sortDir} />
+                    </th>
+                    <th {...thProps("subscriptionCurrentPeriodEnd", "text-left")}>
+                      Period Ends <SortIcon active={sortKey === "subscriptionCurrentPeriodEnd"} dir={sortDir} />
+                    </th>
+                    <th {...thProps("totalPaidPence", "text-right")}>
+                      Revenue <SortIcon active={sortKey === "totalPaidPence"} dir={sortDir} />
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-800 bg-gray-900">
+                  {filtered.map((club) => (
+                    <tr key={club.id} className="hover:bg-gray-800/60 transition-colors">
+                      <td className="px-4 py-3 text-white font-medium whitespace-nowrap">
+                        {club.name}
+                        <span className="ml-2 text-xs text-gray-500 font-mono">
+                          {club.joinCode}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
+                        {formatDate(club.createdAt)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-200">{club.activeUsers}</td>
+                      <td className="px-4 py-3 text-right text-gray-200">{club.totalBookings}</td>
+                      <td className="px-4 py-3 text-right text-gray-200">{club.openBookings}</td>
+                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
+                        {timeAgo(club.lastBookingAt)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded text-xs font-semibold uppercase ${
+                            tierBadge[club.subscriptionTier] ?? "bg-gray-700 text-gray-200"
+                          }`}
+                        >
+                          {club.subscriptionTier}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {club.subscriptionStatus ? (
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-xs font-semibold ${
+                              statusBadge[club.subscriptionStatus] ?? "bg-gray-700 text-gray-200"
+                            }`}
+                          >
+                            {club.subscriptionStatus}
+                          </span>
+                        ) : (
+                          <span className="text-gray-600">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
+                        {formatDate(club.firstPaymentAt)}
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
+                        {formatDate(club.subscriptionCurrentPeriodEnd)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-200 font-mono whitespace-nowrap">
+                        {formatCurrency(club.totalPaidPence)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </ManagementLayout>

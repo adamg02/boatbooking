@@ -41,7 +41,7 @@ export async function GET() {
 
         const boatIds = (boatsRes.data ?? []).map((b: any) => b.id);
 
-        const [totalBookingsRes, openBookingsRes] = await Promise.all([
+        const [totalBookingsRes, openBookingsRes, lastBookingRes] = await Promise.all([
           boatIds.length > 0
             ? supabase
                 .from("Booking")
@@ -56,6 +56,14 @@ export async function GET() {
                 .eq("status", "CONFIRMED")
                 .gte("endTime", now)
             : Promise.resolve({ count: 0 }),
+          boatIds.length > 0
+            ? supabase
+                .from("Booking")
+                .select("createdAt")
+                .in("boatId", boatIds)
+                .order("createdAt", { ascending: false })
+                .limit(1)
+            : Promise.resolve({ data: [] }),
         ]);
 
         const payments = paymentsRes.data ?? [];
@@ -65,6 +73,9 @@ export async function GET() {
         );
         const firstPaymentAt =
           payments.length > 0 ? payments[0].createdAt : null;
+
+        const lastBookingData = (lastBookingRes as any).data ?? [];
+        const lastBookingAt = lastBookingData.length > 0 ? lastBookingData[0].createdAt : null;
 
         return {
           id: club.id,
@@ -81,6 +92,7 @@ export async function GET() {
           openBookings: openBookingsRes.count ?? 0,
           totalPaidPence,
           firstPaymentAt,
+          lastBookingAt,
         };
       })
     );
