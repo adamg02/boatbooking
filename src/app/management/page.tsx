@@ -7,10 +7,16 @@ import Link from "next/link";
 interface PlatformStats {
   totalClubs: number;
   totalActiveUsers: number;
-  totalBookings: number;
-  openBookings: number;
   totalRevenuePence: number;
   activeSubscriptions: number;
+  bookings7: number;
+  bookingsPrev7: number;
+  bookings28: number;
+  bookingsPrev28: number;
+  logins7: number;
+  loginsPrev7: number;
+  logins28: number;
+  loginsPrev28: number;
 }
 
 function formatCurrency(pence: number, currency = "GBP"): string {
@@ -19,6 +25,23 @@ function formatCurrency(pence: number, currency = "GBP"): string {
     currency,
     minimumFractionDigits: 2,
   }).format(pence / 100);
+}
+
+function TrendBadge({ current, previous }: { current: number; previous: number }) {
+  if (previous === 0 && current === 0) return null;
+  const diff = current - previous;
+  const pct = previous === 0 ? null : Math.round((diff / previous) * 100);
+  const up = diff >= 0;
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded ${
+        up ? "bg-green-900/50 text-green-400" : "bg-red-900/50 text-red-400"
+      }`}
+    >
+      {up ? "▲" : "▼"}
+      {pct !== null ? `${Math.abs(pct)}%` : `${Math.abs(diff)}`}
+    </span>
+  );
 }
 
 export default function ManagementDashboard() {
@@ -45,6 +68,7 @@ export default function ManagementDashboard() {
           icon: "🏛️",
           color: "bg-indigo-600",
           href: "/management/clubs",
+          trend: null,
         },
         {
           label: "Active Users",
@@ -52,20 +76,43 @@ export default function ManagementDashboard() {
           icon: "👥",
           color: "bg-blue-600",
           href: "/management/clubs",
+          trend: null,
         },
         {
-          label: "Total Bookings",
-          value: stats.totalBookings,
+          label: "Bookings (Last 7 Days)",
+          value: stats.bookings7,
           icon: "📋",
           color: "bg-teal-600",
           href: "/management/clubs",
+          trend: { current: stats.bookings7, previous: stats.bookingsPrev7 },
+          subtitle: `prev 7 days: ${stats.bookingsPrev7}`,
         },
         {
-          label: "Open Bookings",
-          value: stats.openBookings,
+          label: "Bookings (Last 28 Days)",
+          value: stats.bookings28,
           icon: "📅",
           color: "bg-green-600",
           href: "/management/clubs",
+          trend: { current: stats.bookings28, previous: stats.bookingsPrev28 },
+          subtitle: `prev 28 days: ${stats.bookingsPrev28}`,
+        },
+        {
+          label: "Logins (Last 7 Days)",
+          value: stats.logins7,
+          icon: "🔑",
+          color: "bg-sky-600",
+          href: "/management/clubs",
+          trend: { current: stats.logins7, previous: stats.loginsPrev7 },
+          subtitle: `prev 7 days: ${stats.loginsPrev7}`,
+        },
+        {
+          label: "Logins (Last 28 Days)",
+          value: stats.logins28,
+          icon: "🔐",
+          color: "bg-violet-600",
+          href: "/management/clubs",
+          trend: { current: stats.logins28, previous: stats.loginsPrev28 },
+          subtitle: `prev 28 days: ${stats.loginsPrev28}`,
         },
         {
           label: "Active Subscriptions",
@@ -73,6 +120,7 @@ export default function ManagementDashboard() {
           icon: "💳",
           color: "bg-purple-600",
           href: "/management/clubs",
+          trend: null,
         },
         {
           label: "Total Revenue",
@@ -80,6 +128,7 @@ export default function ManagementDashboard() {
           icon: "💰",
           color: "bg-yellow-600",
           href: "/management/clubs",
+          trend: null,
         },
       ]
     : [];
@@ -113,12 +162,20 @@ export default function ManagementDashboard() {
                   className="bg-gray-900 border border-gray-800 rounded-lg p-6 hover:border-indigo-500 transition-colors"
                 >
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-400">{card.label}</p>
-                      <p className="text-3xl font-bold text-white mt-2">{card.value}</p>
+                      <div className="flex items-baseline gap-2 mt-2 flex-wrap">
+                        <p className="text-3xl font-bold text-white">{card.value}</p>
+                        {card.trend && (
+                          <TrendBadge current={card.trend.current} previous={card.trend.previous} />
+                        )}
+                      </div>
+                      {"subtitle" in card && card.subtitle && (
+                        <p className="text-xs text-gray-500 mt-1">{card.subtitle}</p>
+                      )}
                     </div>
                     <div
-                      className={`${card.color} text-white text-3xl w-14 h-14 rounded-full flex items-center justify-center`}
+                      className={`${card.color} text-white text-3xl w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ml-4`}
                     >
                       {card.icon}
                     </div>
@@ -157,3 +214,4 @@ export default function ManagementDashboard() {
     </ManagementLayout>
   );
 }
+

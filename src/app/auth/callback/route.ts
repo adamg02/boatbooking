@@ -63,6 +63,13 @@ export async function GET(request: Request) {
           },
           { onConflict: 'id', ignoreDuplicates: false }
         );
+
+        // Record login event for platform analytics
+        try {
+          await adminClient.from('LoginEvent').insert({ userId: user.id });
+        } catch (loginEventError) {
+          console.error('LoginEvent insert error:', loginEventError);
+        }
       } catch (syncError) {
         // Non-fatal: log and continue so the user can still sign in.
         console.error('User sync error:', syncError);
