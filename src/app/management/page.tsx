@@ -44,6 +44,74 @@ function TrendBadge({ current, previous }: { current: number; previous: number }
   );
 }
 
+function MetricBlock({
+  label,
+  current,
+  previous,
+  prevLabel,
+}: {
+  label: string;
+  current: number;
+  previous: number;
+  prevLabel: string;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{label}</p>
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <p className="text-3xl font-bold text-white">{current}</p>
+        <TrendBadge current={current} previous={previous} />
+      </div>
+      <p className="text-xs text-gray-500 mt-1">{prevLabel}: {previous}</p>
+    </div>
+  );
+}
+
+function CombinedCard({
+  title,
+  icon,
+  iconColor,
+  metric7,
+  metric28,
+}: {
+  title: string;
+  icon: string;
+  iconColor: string;
+  metric7: { current: number; previous: number };
+  metric28: { current: number; previous: number };
+}) {
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div
+          className={`${iconColor} text-white text-2xl w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0`}
+        >
+          {icon}
+        </div>
+        <h3 className="text-lg font-semibold text-white">{title}</h3>
+      </div>
+      <div className="grid grid-cols-2 divide-x divide-gray-800">
+        <div className="pr-4">
+          <MetricBlock
+            label="Last 7 Days"
+            current={metric7.current}
+            previous={metric7.previous}
+            prevLabel="prev 7 days"
+          />
+        </div>
+        <div className="pl-4">
+          <MetricBlock
+            label="Last 28 Days"
+            current={metric28.current}
+            previous={metric28.previous}
+            prevLabel="prev 28 days"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ManagementDashboard() {
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,42 +145,6 @@ export default function ManagementDashboard() {
           color: "bg-blue-600",
           href: "/management/clubs",
           trend: null,
-        },
-        {
-          label: "Bookings (Last 7 Days)",
-          value: stats.bookings7,
-          icon: "📋",
-          color: "bg-teal-600",
-          href: "/management/clubs",
-          trend: { current: stats.bookings7, previous: stats.bookingsPrev7 },
-          subtitle: `prev 7 days: ${stats.bookingsPrev7}`,
-        },
-        {
-          label: "Bookings (Last 28 Days)",
-          value: stats.bookings28,
-          icon: "📅",
-          color: "bg-green-600",
-          href: "/management/clubs",
-          trend: { current: stats.bookings28, previous: stats.bookingsPrev28 },
-          subtitle: `prev 28 days: ${stats.bookingsPrev28}`,
-        },
-        {
-          label: "Logins (Last 7 Days)",
-          value: stats.logins7,
-          icon: "🔑",
-          color: "bg-sky-600",
-          href: "/management/clubs",
-          trend: { current: stats.logins7, previous: stats.loginsPrev7 },
-          subtitle: `prev 7 days: ${stats.loginsPrev7}`,
-        },
-        {
-          label: "Logins (Last 28 Days)",
-          value: stats.logins28,
-          icon: "🔐",
-          color: "bg-violet-600",
-          href: "/management/clubs",
-          trend: { current: stats.logins28, previous: stats.loginsPrev28 },
-          subtitle: `prev 28 days: ${stats.loginsPrev28}`,
         },
         {
           label: "Active Subscriptions",
@@ -154,7 +186,7 @@ export default function ManagementDashboard() {
         {stats && (
           <>
             {/* Stats grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
               {statCards.map((card) => (
                 <Link
                   key={card.label}
@@ -166,13 +198,7 @@ export default function ManagementDashboard() {
                       <p className="text-sm font-medium text-gray-400">{card.label}</p>
                       <div className="flex items-baseline gap-2 mt-2 flex-wrap">
                         <p className="text-3xl font-bold text-white">{card.value}</p>
-                        {card.trend && (
-                          <TrendBadge current={card.trend.current} previous={card.trend.previous} />
-                        )}
                       </div>
-                      {"subtitle" in card && card.subtitle && (
-                        <p className="text-xs text-gray-500 mt-1">{card.subtitle}</p>
-                      )}
                     </div>
                     <div
                       className={`${card.color} text-white text-3xl w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ml-4`}
@@ -182,6 +208,24 @@ export default function ManagementDashboard() {
                   </div>
                 </Link>
               ))}
+            </div>
+
+            {/* Bookings & Logins combined cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+              <CombinedCard
+                title="Bookings"
+                icon="📋"
+                iconColor="bg-teal-600"
+                metric7={{ current: stats.bookings7, previous: stats.bookingsPrev7 }}
+                metric28={{ current: stats.bookings28, previous: stats.bookingsPrev28 }}
+              />
+              <CombinedCard
+                title="Logins"
+                icon="🔑"
+                iconColor="bg-sky-600"
+                metric7={{ current: stats.logins7, previous: stats.loginsPrev7 }}
+                metric28={{ current: stats.logins28, previous: stats.loginsPrev28 }}
+              />
             </div>
 
             {/* Quick actions */}
