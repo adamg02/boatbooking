@@ -10,8 +10,9 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── Management IP gate ──────────────────────────────────────────────
-  // /management pages and /api/management routes are restricted to
-  // IP addresses in the ManagementIpAllowlist table (or bypass key).
+  // /management pages and /api/management routes are restricted to:
+  //   1. IP addresses in the ManagementIpAllowlist table, AND
+  //   2. Authenticated users whose User.isSystemOwner is true.
   if (pathname.startsWith('/management') || pathname.startsWith('/api/management')) {
     const { getClientIp } = await import('@/lib/management');
     const detectedIp = getClientIp(request);
@@ -23,6 +24,43 @@ export async function middleware(request: NextRequest) {
     const allowed = await checkManagementAccess(request);
     if (!allowed) {
       // Return 403 for API calls, redirect to a simple error page for browser navigation
+      if (pathname.startsWith('/api/management')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL('/auth/signin', request.url));
+    }
+
+    // Additionally require the signed-in user to be a system owner.
+    // This is a second factor on top of the IP allowlist so that even
+    // someone on an allowed IP cannot access management if they are not
+    // a designated system owner account.
+    const { createServerClient: createMgmtClient } = await import('@supabase/ssr');
+    const mgmtSupabase = createMgmtClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) { return request.cookies.get(name)?.value; },
+          set() {},
+          remove() {},
+        },
+      }
+    );
+    const { data: { user: mgmtUser } } = await mgmtSupabase.auth.getUser();
+    if (!mgmtUser) {
+      if (pathname.startsWith('/api/management')) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      return NextResponse.redirect(new URL('/auth/signin', request.url));
+    }
+    const { getSupabaseAdminClient: getMgmtAdmin } = await import('@/lib/supabase');
+    const mgmtAdmin = getMgmtAdmin();
+    const { data: ownerData } = await mgmtAdmin
+      .from('User')
+      .select('isSystemOwner')
+      .eq('id', mgmtUser.id)
+      .single();
+    if (!ownerData?.isSystemOwner) {
       if (pathname.startsWith('/api/management')) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }

@@ -64,7 +64,8 @@ export async function GET(request: Request) {
           { onConflict: 'id', ignoreDuplicates: false }
         );
 
-        // Record login event for platform analytics
+        // Record login event for platform analytics (recorded for all users,
+        // but system owner logins are excluded from dashboard metrics at query time)
         try {
           await adminClient.from('LoginEvent').insert({ userId: user.id });
         } catch (loginEventError) {

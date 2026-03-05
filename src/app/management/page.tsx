@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import ManagementLayout from "@/components/ManagementLayout";
 import Link from "next/link";
+import toast, { Toaster } from "react-hot-toast";
 
 interface PlatformStats {
   totalClubs: number;
@@ -17,6 +18,13 @@ interface PlatformStats {
   loginsPrev7: number;
   logins28: number;
   loginsPrev28: number;
+}
+
+interface SystemOwner {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: string;
 }
 
 function formatCurrency(pence: number, currency = "GBP"): string {
@@ -117,6 +125,72 @@ export default function ManagementDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // System owners panel
+  const [showOwners, setShowOwners] = useState(false);
+  const [owners, setOwners] = useState<SystemOwner[]>([]);
+  const [ownersLoading, setOwnersLoading] = useState(false);
+  const [ownersError, setOwnersError] = useState<string | null>(null);
+  const [newOwnerEmail, setNewOwnerEmail] = useState("");
+  const [addingOwner, setAddingOwner] = useState(false);
+
+  const loadOwners = () => {
+    setOwnersLoading(true);
+    fetch("/api/management/system-owners")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load system owners");
+        return res.json();
+      })
+      .then((data) => { setOwners(data); setOwnersError(null); })
+      .catch((err) => setOwnersError(err.message))
+      .finally(() => setOwnersLoading(false));
+  };
+
+  const handleAddOwner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const email = newOwnerEmail.trim();
+    if (!email) return;
+    setAddingOwner(true);
+    try {
+      const res = await fetch("/api/management/system-owners", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, isSystemOwner: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to add system owner");
+      } else {
+        toast.success(`${data.name || data.email} marked as system owner`);
+        setNewOwnerEmail("");
+        loadOwners();
+      }
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setAddingOwner(false);
+    }
+  };
+
+  const handleRemoveOwner = async (owner: SystemOwner) => {
+    if (!confirm(`Remove system owner flag from ${owner.email}?`)) return;
+    try {
+      const res = await fetch("/api/management/system-owners", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: owner.email, isSystemOwner: false }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to remove system owner");
+      } else {
+        toast.success(`${owner.name || owner.email} is no longer a system owner`);
+        loadOwners();
+      }
+    } catch {
+      toast.error("Network error");
+    }
+  };
+
   useEffect(() => {
     fetch("/api/management/stats")
       .then((res) => {
@@ -167,6 +241,7 @@ export default function ManagementDashboard() {
 
   return (
     <ManagementLayout>
+      <Toaster position="top-right" />
       <div>
         <div className="mb-8">
           <h2 className="text-3xl font-bold text-white">Platform Dashboard</h2>
@@ -250,8 +325,92 @@ export default function ManagementDashboard() {
                     Control which IP addresses can access this management console.
                   </p>
                 </Link>
+                <button
+                  onClick={() => {
+                    setShowOwners((v) => {
+                      if (!v) loadOwners();
+                      return !v;
+                    });
+                  }}
+                  className="text-left border border-gray-700 rounded-lg p-4 hover:border-indigo-500 hover:bg-indigo-900/20 transition-all"
+                >
+                  <h4 className="font-semibold text-white">System Owners</h4>
+                  <p className="text-sm text-gray-400 mt-1">
+                    Designate accounts that can access this console. Their activity is excluded from platform statistics.
+                  </p>
+                </button>
               </div>
             </div>
+
+            {/* System owners panel */}
+            {showOwners && (
+              <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-white">System Owner Accounts</h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Accounts with system owner status can access this management console and are
+                      excluded from active-user and login statistics.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowOwners(false)}
+                    className="text-gray-500 hover:text-gray-300 text-xl leading-none ml-4"
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Add by email */}
+                <form onSubmit={handleAddOwner} className="flex flex-col sm:flex-row gap-3 mb-6">
+                  <input
+                    type="email"
+                    placeholder="Email address of the account to promote"
+                    value={newOwnerEmail}
+                    onChange={(e) => setNewOwnerEmail(e.target.value)}
+                    required
+                    className="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={addingOwner || !newOwnerEmail.trim()}
+                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+                  >
+                    {addingOwner ? "Adding…" : "Add System Owner"}
+                  </button>
+                </form>
+
+                {ownersError && (
+                  <div className="bg-red-900/40 border border-red-700 text-red-300 rounded-lg p-3 mb-4 text-sm">
+                    {ownersError}
+                  </div>
+                )}
+
+                {ownersLoading ? (
+                  <p className="text-gray-400 text-sm">Loading…</p>
+                ) : owners.length === 0 ? (
+                  <p className="text-gray-500 text-sm">No system owner accounts configured yet.</p>
+                ) : (
+                  <div className="divide-y divide-gray-800">
+                    {owners.map((owner) => (
+                      <div key={owner.id} className="flex items-center justify-between py-3">
+                        <div>
+                          <p className="text-sm font-medium text-white">{owner.name}</p>
+                          <p className="text-xs text-gray-400">{owner.email}</p>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveOwner(owner)}
+                          className="text-xs text-red-400 hover:text-red-300 border border-red-800 hover:border-red-600 rounded px-3 py-1 transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
