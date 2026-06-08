@@ -19,7 +19,8 @@ export async function middleware(request: NextRequest) {
         const requestUrl = new URL(request.url);
 
         if (requestUrl.origin !== configuredUrl.origin) {
-          const redirectUrl = new URL(pathname + requestUrl.search, configuredUrl);
+          const redirectUrl = new URL(pathname, configuredUrl);
+          redirectUrl.search = requestUrl.search;
           return NextResponse.redirect(redirectUrl);
         }
       } catch {
