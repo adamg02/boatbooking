@@ -8,9 +8,10 @@ const ONBOARDING_EXEMPT_PATHS = ['/onboarding', '/auth', '/api/clubs', '/api/str
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const isProduction = process.env.NODE_ENV === 'production';
 
   // ── Production homepage canonical host redirect ───────────────────────
-  if (pathname === '/' && process.env.NODE_ENV === 'production') {
+  if (pathname === '/' && isProduction) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (appUrl) {
       try {
@@ -18,7 +19,8 @@ export async function middleware(request: NextRequest) {
         const requestUrl = new URL(request.url);
 
         if (requestUrl.origin !== configuredUrl.origin) {
-          return NextResponse.redirect(configuredUrl);
+          const redirectUrl = new URL(requestUrl.pathname + requestUrl.search, configuredUrl);
+          return NextResponse.redirect(redirectUrl);
         }
       } catch {
         // Ignore invalid NEXT_PUBLIC_APP_URL values and continue normal flow.
