@@ -9,6 +9,23 @@ const ONBOARDING_EXEMPT_PATHS = ['/onboarding', '/auth', '/api/clubs', '/api/str
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── Production homepage canonical host redirect ───────────────────────
+  if (pathname === '/' && process.env.NODE_ENV === 'production') {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (appUrl) {
+      try {
+        const configuredUrl = new URL(appUrl);
+        const requestUrl = new URL(request.url);
+
+        if (requestUrl.origin !== configuredUrl.origin) {
+          return NextResponse.redirect(configuredUrl);
+        }
+      } catch {
+        // Ignore invalid NEXT_PUBLIC_APP_URL values and continue normal flow.
+      }
+    }
+  }
+
   // ── Management IP gate ──────────────────────────────────────────────
   // /management pages and /api/management routes are restricted to:
   //   1. IP addresses in the ManagementIpAllowlist table, AND
