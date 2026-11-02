@@ -21,12 +21,19 @@ export async function GET() {
     // For each club, gather user count, total bookings, open bookings, and revenue
     const enriched = await Promise.all(
       clubs.map(async (club) => {
-        const [usersRes, boatsRes, paymentsRes] = await Promise.all([
+        const [usersRes, lastLoginRes, boatsRes, paymentsRes] = await Promise.all([
           supabase
             .from("User")
             .select("id", { count: "exact", head: true })
             .eq("clubId", club.id)
             .eq("isActive", true),
+          supabase
+            .from("User")
+            .select("lastLogin")
+            .eq("clubId", club.id)
+            .not("lastLogin", "is", null)
+            .order("lastLogin", { ascending: false })
+            .limit(1),
           supabase
             .from("Boat")
             .select("id")
@@ -77,6 +84,9 @@ export async function GET() {
         const lastBookingData = (lastBookingRes as any).data ?? [];
         const lastBookingAt = lastBookingData.length > 0 ? lastBookingData[0].createdAt : null;
 
+        const lastLoginData = lastLoginRes.data ?? [];
+        const lastLoginAt = lastLoginData.length > 0 ? lastLoginData[0].lastLogin : null;
+
         return {
           id: club.id,
           name: club.name,
@@ -88,11 +98,13 @@ export async function GET() {
           subscriptionCurrentPeriodEnd: club.subscriptionCurrentPeriodEnd ?? null,
           hasStripe: !!club.stripeCustomerId,
           activeUsers: usersRes.count ?? 0,
+          boatCount: boatIds.length,
           totalBookings: totalBookingsRes.count ?? 0,
           openBookings: openBookingsRes.count ?? 0,
           totalPaidPence,
           firstPaymentAt,
           lastBookingAt,
+          lastLoginAt,
         };
       })
     );

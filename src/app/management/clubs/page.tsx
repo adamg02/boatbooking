@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import ManagementLayout from "@/components/ManagementLayout";
 
 interface ClubRow {
@@ -14,23 +15,17 @@ interface ClubRow {
   subscriptionCurrentPeriodEnd: string | null;
   hasStripe: boolean;
   activeUsers: number;
+  boatCount: number;
   totalBookings: number;
   openBookings: number;
   totalPaidPence: number;
   firstPaymentAt: string | null;
   lastBookingAt: string | null;
+  lastLoginAt: string | null;
 }
 
 type SortKey = keyof ClubRow;
 type SortDir = "asc" | "desc";
-
-function formatCurrency(pence: number): string {
-  return new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    minimumFractionDigits: 2,
-  }).format(pence / 100);
-}
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -167,7 +162,12 @@ export default function ManagementClubsPage() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-white font-semibold">{club.name}</p>
+                      <Link
+                        href={`/management/clubs/${club.id}`}
+                        className="text-white font-semibold hover:text-indigo-400 hover:underline transition-colors"
+                      >
+                        {club.name}
+                      </Link>
                       <p className="text-xs text-gray-500 font-mono mt-0.5">{club.joinCode}</p>
                     </div>
                     <div className="flex gap-1 flex-wrap justify-end">
@@ -194,16 +194,16 @@ export default function ManagementClubsPage() {
                     <span className="text-gray-300 text-right">{formatDate(club.createdAt)}</span>
                     <span className="text-gray-500">Users</span>
                     <span className="text-gray-300 text-right">{club.activeUsers}</span>
+                    <span className="text-gray-500">Boats</span>
+                    <span className="text-gray-300 text-right">{club.boatCount}</span>
                     <span className="text-gray-500">Bookings</span>
                     <span className="text-gray-300 text-right">{club.totalBookings}</span>
                     <span className="text-gray-500">Open</span>
                     <span className="text-gray-300 text-right">{club.openBookings}</span>
                     <span className="text-gray-500">Last Booking</span>
                     <span className="text-gray-300 text-right">{timeAgo(club.lastBookingAt)}</span>
-                    <span className="text-gray-500">Revenue</span>
-                    <span className="text-gray-300 text-right font-mono">
-                      {formatCurrency(club.totalPaidPence)}
-                    </span>
+                    <span className="text-gray-500">Last Login</span>
+                    <span className="text-gray-300 text-right">{timeAgo(club.lastLoginAt)}</span>
                   </div>
                 </div>
               ))}
@@ -223,6 +223,9 @@ export default function ManagementClubsPage() {
                     <th {...thProps("activeUsers", "text-right")}>
                       Users <SortIcon active={sortKey === "activeUsers"} dir={sortDir} />
                     </th>
+                    <th {...thProps("boatCount", "text-right")}>
+                      Boats <SortIcon active={sortKey === "boatCount"} dir={sortDir} />
+                    </th>
                     <th {...thProps("totalBookings", "text-right")}>
                       Bookings <SortIcon active={sortKey === "totalBookings"} dir={sortDir} />
                     </th>
@@ -232,20 +235,14 @@ export default function ManagementClubsPage() {
                     <th {...thProps("lastBookingAt", "text-left")}>
                       Last Booking <SortIcon active={sortKey === "lastBookingAt"} dir={sortDir} />
                     </th>
+                    <th {...thProps("lastLoginAt", "text-left")}>
+                      Last Login <SortIcon active={sortKey === "lastLoginAt"} dir={sortDir} />
+                    </th>
                     <th {...thProps("subscriptionTier", "text-left")}>
                       Plan <SortIcon active={sortKey === "subscriptionTier"} dir={sortDir} />
                     </th>
                     <th {...thProps("subscriptionStatus", "text-left")}>
                       Sub Status <SortIcon active={sortKey === "subscriptionStatus"} dir={sortDir} />
-                    </th>
-                    <th {...thProps("firstPaymentAt", "text-left")}>
-                      Sub Started <SortIcon active={sortKey === "firstPaymentAt"} dir={sortDir} />
-                    </th>
-                    <th {...thProps("subscriptionCurrentPeriodEnd", "text-left")}>
-                      Period Ends <SortIcon active={sortKey === "subscriptionCurrentPeriodEnd"} dir={sortDir} />
-                    </th>
-                    <th {...thProps("totalPaidPence", "text-right")}>
-                      Revenue <SortIcon active={sortKey === "totalPaidPence"} dir={sortDir} />
                     </th>
                   </tr>
                 </thead>
@@ -253,7 +250,12 @@ export default function ManagementClubsPage() {
                   {filtered.map((club) => (
                     <tr key={club.id} className="hover:bg-gray-800/60 transition-colors">
                       <td className="px-4 py-3 text-white font-medium whitespace-nowrap">
-                        {club.name}
+                        <Link
+                          href={`/management/clubs/${club.id}`}
+                          className="hover:text-indigo-400 hover:underline transition-colors"
+                        >
+                          {club.name}
+                        </Link>
                         <span className="ml-2 text-xs text-gray-500 font-mono">
                           {club.joinCode}
                         </span>
@@ -262,10 +264,14 @@ export default function ManagementClubsPage() {
                         {formatDate(club.createdAt)}
                       </td>
                       <td className="px-4 py-3 text-right text-gray-200">{club.activeUsers}</td>
+                      <td className="px-4 py-3 text-right text-gray-200">{club.boatCount}</td>
                       <td className="px-4 py-3 text-right text-gray-200">{club.totalBookings}</td>
                       <td className="px-4 py-3 text-right text-gray-200">{club.openBookings}</td>
                       <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
                         {timeAgo(club.lastBookingAt)}
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
+                        {timeAgo(club.lastLoginAt)}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span
@@ -288,15 +294,6 @@ export default function ManagementClubsPage() {
                         ) : (
                           <span className="text-gray-600">—</span>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
-                        {formatDate(club.firstPaymentAt)}
-                      </td>
-                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
-                        {formatDate(club.subscriptionCurrentPeriodEnd)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-200 font-mono whitespace-nowrap">
-                        {formatCurrency(club.totalPaidPence)}
                       </td>
                     </tr>
                   ))}
