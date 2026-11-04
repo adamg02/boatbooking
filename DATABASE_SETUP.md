@@ -1,5 +1,10 @@
 # Database Setup Guide
 
+> **Note:** the database now lives in the `boatbooking` schema of a Supabase project shared
+> with the tt app. See `supabase/consolidation/README.md` for the current schema, RLS
+> model and migration runbook; the SQL files referenced below describe the legacy
+> `public`-schema setup.
+
 This project uses **Supabase** with direct SQL schema creation (no ORM required).
 
 ## Quick Start

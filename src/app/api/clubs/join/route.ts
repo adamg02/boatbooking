@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseClient, getSupabaseAdminClient } from "@/lib/supabase";
 import { z } from "zod";
 
 const joinClubSchema = z.object({
@@ -41,8 +41,12 @@ export async function POST(request: Request) {
 
     const { joinCode } = result.data;
 
+    // Joining is done with the service role: under RLS a user can only see
+    // their own club, and User.clubId is not writable by end users.
+    const supabaseAdmin = getSupabaseAdminClient();
+
     // Look up the club by join code (case-insensitive)
-    const { data: club, error: clubError } = await supabase
+    const { data: club, error: clubError } = await supabaseAdmin
       .from("Club")
       .select("id, name")
       .eq("joinCode", joinCode.toUpperCase())
@@ -56,10 +60,11 @@ export async function POST(request: Request) {
     }
 
     // Assign user to the club
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from("User")
       .update({ clubId: club.id })
-      .eq("id", user.id);
+      .eq("id", user.id)
+      .is("clubId", null);
 
     if (updateError) {
       console.error("Assign user to club error:", updateError);

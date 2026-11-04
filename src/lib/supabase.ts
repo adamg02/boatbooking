@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+import { SUPABASE_DB_SCHEMA } from './supabase-schema'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -19,6 +20,7 @@ export const getSupabaseClient = async () => {
     supabaseUrl,
     supabaseAnonKey,
     {
+      db: { schema: SUPABASE_DB_SCHEMA },
       cookies: {
         get(name: string) {
           return cookieStore.get(name)?.value
@@ -57,6 +59,7 @@ export function getSupabaseAdminClient() {
     throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
   }
   return createClient(url, serviceRoleKey, {
+    db: { schema: SUPABASE_DB_SCHEMA },
     auth: { persistSession: false },
   });
 }

@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { SUPABASE_DB_SCHEMA } from './supabase-schema'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -9,9 +10,9 @@ const isDuringBuild = !supabaseUrl || !supabaseAnonKey;
 // Client-side Supabase client for browser usage (deprecated - use getSupabaseClientComponent instead)
 export const supabase = isDuringBuild 
   ? null as any
-  : createBrowserClient(supabaseUrl, supabaseAnonKey);
+  : createBrowserClient(supabaseUrl, supabaseAnonKey, { db: { schema: SUPABASE_DB_SCHEMA } });
 
 // Client component client (for use in 'use client' components)
 export const getSupabaseClientComponent = () => {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
+  return createBrowserClient(supabaseUrl, supabaseAnonKey, { db: { schema: SUPABASE_DB_SCHEMA } });
 };

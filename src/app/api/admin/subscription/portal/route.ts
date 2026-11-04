@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseClient, getSupabaseAdminClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
 import { stripe } from "@/lib/stripe";
 
@@ -27,8 +27,9 @@ export async function POST() {
       const existing = await stripe.customers.retrieve(club.stripeCustomerId);
       if ((existing as any).deleted) throw new Error("deleted");
     } catch {
-      // Stale customer ID — clear it so the user can re-subscribe
-      const supabaseForUpdate = await getSupabaseClient();
+      // Stale customer ID — clear it so the user can re-subscribe.
+      // Stripe fields are service-role-only (see supabase/consolidation).
+      const supabaseForUpdate = getSupabaseAdminClient();
       await supabaseForUpdate
         .from("Club")
         .update({ stripeCustomerId: null, stripeSubscriptionId: null, subscriptionTier: "free", subscriptionStatus: null, updatedAt: new Date().toISOString() })
