@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { resolveLocale, LOCALE_COOKIE } from '@/lib/locales'
 import { checkManagementAccess } from '@/lib/management'
+import { SUPABASE_DB_SCHEMA } from '@/lib/supabase-schema'
 
 // Paths that are accessible without belonging to a club
 const ONBOARDING_EXEMPT_PATHS = ['/onboarding', '/auth', '/api/clubs', '/api/stripe', '/management', '/api/management'];
@@ -39,6 +40,7 @@ export async function middleware(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
+        db: { schema: SUPABASE_DB_SCHEMA },
         cookies: {
           get(name: string) { return request.cookies.get(name)?.value; },
           set() {},
@@ -94,6 +96,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      db: { schema: SUPABASE_DB_SCHEMA },
       cookies: {
         get(name: string) {
           return request.cookies.get(name)?.value

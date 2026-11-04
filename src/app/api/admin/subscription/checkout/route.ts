@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseClient, getSupabaseAdminClient } from "@/lib/supabase";
 import { requireAdmin } from "@/lib/admin";
 import { stripe, getStripePrices } from "@/lib/stripe";
 import { cookies } from "next/headers";
@@ -70,7 +70,8 @@ export async function POST(request: Request) {
       } catch {
         stripeCustomerId = null; // customer not found in this Stripe account
         // Clear stale IDs from DB
-        await supabase
+        // Stripe fields are service-role-only (see supabase/consolidation).
+        await getSupabaseAdminClient()
           .from("Club")
           .update({ stripeCustomerId: null, stripeSubscriptionId: null, subscriptionTier: "free", subscriptionStatus: null, updatedAt: new Date().toISOString() })
           .eq("id", club.id);
@@ -85,7 +86,7 @@ export async function POST(request: Request) {
       });
       stripeCustomerId = customer.id;
 
-      await supabase
+      await getSupabaseAdminClient()
         .from("Club")
         .update({ stripeCustomerId, updatedAt: new Date().toISOString() })
         .eq("id", club.id);

@@ -53,11 +53,15 @@ export async function POST(request: Request) {
 
     const { name, description } = result.data;
 
+    // Club rows are created with the service role: members can only see their
+    // own club under RLS, so the join-code collision check must bypass it too.
+    const supabaseAdmin = getSupabaseAdminClient();
+
     // Generate a unique join code (retry if collision)
     let joinCode = generateJoinCode();
     let attempts = 0;
     while (attempts < 5) {
-      const { data: existing } = await supabase
+      const { data: existing } = await supabaseAdmin
         .from("Club")
         .select("id")
         .eq("joinCode", joinCode)
@@ -68,7 +72,7 @@ export async function POST(request: Request) {
     }
 
     // Create the club
-    const { data: club, error: clubError } = await supabase
+    const { data: club, error: clubError } = await supabaseAdmin
       .from("Club")
       .insert({ name, description: description || null, joinCode })
       .select()
@@ -79,10 +83,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Failed to create club" }, { status: 500 });
     }
 
-    // Use admin client for bootstrapping: creating the Admin group and assigning
-    // the user requires bypassing RLS (the user isn't an admin yet at this point).
-    const supabaseAdmin = getSupabaseAdminClient();
-
+    // Creating the Admin group and assigning the user also requires bypassing
+    // RLS (the user isn't an admin yet at this point).
     // Create an "Admin" group for this club
     const { data: adminGroup, error: groupError } = await supabaseAdmin
       .from("Group")
