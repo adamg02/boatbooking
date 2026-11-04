@@ -42,6 +42,7 @@ every RLS policy requires membership of the app whose table is being accessed.
 | `02_boatbooking_schema.sql` | boatbooking | Move tables `public` → `boatbooking`, grants, RLS |
 | `03_tt_schema.sql` | tt | Create `tt` schema, grants, RLS, realtime |
 | `04_tt_import.sql` + `migrate_tt_data.sh` | tt | Copy TT auth users + data from the old TT project |
+| `04a_tt_stage_via_dblink.sql` | tt | SQL-editor alternative to the shell script (stages data via `dblink`) |
 
 All scripts are idempotent (safe to re-run).
 
@@ -71,8 +72,19 @@ and deploying its new env vars + code.
    *Exposed schemas*: add `boatbooking` and `tt` (you may remove `public`).
    Do this *after* step 3 – PostgREST fails if a listed schema doesn't exist.
 5. **Deploy boatbooking** from this branch (no env changes needed).
-6. **Import tt** (from the tt repo, needs `psql` ≥ 15; use direct/session
-   connection strings, not the transaction pooler):
+6. **Import tt.** Choose one of these:
+
+   **a) SQL editor only (no local tools).** Run these in the consolidated project's SQL editor:
+      1. Open `04a_tt_stage_via_dblink.sql`. Replace `src` with the **old tt
+         project's Session pooler** connection string (port 5432, user
+         `postgres.<old-ref>`, real password), then run it. It shows the row counts
+         staged per table.
+      2. Run the whole of `04_tt_import.sql`.
+      (Running `04` by itself fails with *"Staging table tt_import.auth_users is
+      missing"*; nothing is changed, so just run 04a first.)
+
+   **b) Shell (needs bash + `psql` ≥ 15).** Use direct/session connection
+   strings, not the transaction pooler:
    ```bash
    TT_SOURCE_DB_URL='postgresql://postgres:…@db.<old-tt-ref>.supabase.co:5432/postgres' \
    TARGET_DB_URL='postgresql://postgres:…@db.<this-ref>.supabase.co:5432/postgres' \
@@ -84,7 +96,8 @@ and deploying its new env vars + code.
    identities, so they can sign in without resetting anything. The script runs
    in one transaction and verifies row counts. Avoid recording tt times between
    this step and step 7 (they would land in the old project). The mapping is kept in
-   `tt_import.user_map` for auditing (drop the `tt_import` schema when happy).
+   `tt_import.user_map` for auditing. When you're happy, run `drop schema tt_import cascade;`
+   (and `drop extension dblink;` if you used option a).
 7. **Deploy tt** with `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` set to
    this project's values.
 8. **Verify** (see below), then pause/delete the old tt project after a grace period.
