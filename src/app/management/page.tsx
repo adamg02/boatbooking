@@ -225,7 +225,7 @@ export default function ManagementDashboard() {
           value: stats.activeSubscriptions,
           icon: "💳",
           color: "bg-purple-600",
-          href: "/management/clubs",
+          href: "/management/subscriptions",
           trend: null,
         },
         {
