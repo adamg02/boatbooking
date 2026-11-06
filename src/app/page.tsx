@@ -101,7 +101,7 @@ export default async function Home() {
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            href="/auth/signin"
+            href="/auth/signin?intent=signup"
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3.5 rounded-xl text-lg transition-colors shadow-lg shadow-blue-200 dark:shadow-none"
           >
             Get started free
@@ -168,7 +168,7 @@ export default async function Home() {
             {h.ctaParagraph}
           </p>
           <Link
-            href="/auth/signin"
+            href="/auth/signin?intent=signup"
             className="inline-block bg-white text-blue-600 font-semibold px-8 py-3.5 rounded-xl text-lg hover:bg-blue-50 transition-colors shadow-lg"
           >
             Get started free

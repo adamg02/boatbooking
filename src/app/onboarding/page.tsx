@@ -1,15 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { fireEvent } from "@/lib/gtag";
+import { getSupabaseClientComponent } from "@/lib/supabase-client";
 import SignOutButton from "@/components/SignOutButton";
 
-type Tab = "create" | "join";
+type Tab = "create" | "join" | "nocode";
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>("join");
+  const searchParams = useSearchParams();
+  const inviteCode = (searchParams.get("code") ?? "").trim().toUpperCase();
+  const [activeTab, setActiveTabState] = useState<Tab>("join");
+
+  const setActiveTab = (tab: Tab) => {
+    setActiveTabState(tab);
+    fireEvent("onboarding_tab_switched", { tab });
+  };
 
   useEffect(() => {
     fireEvent("onboarding_started");
@@ -26,6 +34,10 @@ export default function OnboardingPage() {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
 
+  // "No code" pitch helper
+  const [pitchClubName, setPitchClubName] = useState("");
+  const [pitchCopied, setPitchCopied] = useState(false);
+
   const handleCreateClub = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateError(null);
@@ -38,40 +50,95 @@ export default function OnboardingPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setCreateError(data.error || "Failed to create club");
+        const message = data.error || "Failed to create club";
+        setCreateError(message);
+        fireEvent("club_create_failed", { reason: message });
         return;
       }
       router.push("/onboarding/club-created");
     } catch {
       setCreateError("An unexpected error occurred. Please try again.");
+      fireEvent("club_create_failed", { reason: "network_error" });
     } finally {
       setCreating(false);
     }
   };
 
-  const handleJoinClub = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setJoinError(null);
-    setJoining(true);
-    try {
-      const res = await fetch("/api/clubs/join", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ joinCode: joinCode.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setJoinError(data.error || "Failed to join club");
+  const performJoin = useCallback(
+    async (code: string) => {
+      setJoinError(null);
+      setJoining(true);
+      try {
+        const res = await fetch("/api/clubs/join", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ joinCode: code }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          const message = data.error || "Failed to join club";
+          setJoinError(message);
+          fireEvent("join_failed", { reason: message });
+          return;
+        }
+        fireEvent("club_joined");
+        router.push("/boats");
+        router.refresh();
+      } catch {
+        setJoinError("An unexpected error occurred. Please try again.");
+        fireEvent("join_failed", { reason: "network_error" });
+      } finally {
+        setJoining(false);
+      }
+    },
+    [router]
+  );
+
+  // On mount: require a session (invite links can be opened signed-out), then
+  // auto-submit the invite code if one was provided in the URL.
+  const initRan = useRef(false);
+  useEffect(() => {
+    if (initRan.current) return;
+    initRan.current = true;
+    const supabase = getSupabaseClientComponent();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        const next = inviteCode
+          ? `/onboarding?code=${encodeURIComponent(inviteCode)}`
+          : "/onboarding";
+        router.replace(`/auth/signin?next=${encodeURIComponent(next)}`);
         return;
       }
-      fireEvent("club_joined");
-      router.push("/boats");
-      router.refresh();
+      if (inviteCode) {
+        setJoinCode(inviteCode);
+        setActiveTabState("join");
+        fireEvent("invite_link_used");
+        performJoin(inviteCode);
+      }
+    });
+  }, [inviteCode, performJoin, router]);
+
+  const handleJoinClub = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await performJoin(joinCode.trim());
+  };
+
+  const pitchMessage = `Hi! I found RowBook – a boat booking app made for rowing clubs. Members book boats from their phone and admins manage the fleet, groups and schedules. Could we set it up for ${pitchClubName.trim() || "our club"}? Take a look: ${typeof window !== "undefined" ? window.location.origin : ""}`;
+
+  const handleCopyPitch = async () => {
+    try {
+      await navigator.clipboard.writeText(pitchMessage);
     } catch {
-      setJoinError("An unexpected error occurred. Please try again.");
-    } finally {
-      setJoining(false);
+      const el = document.createElement("textarea");
+      el.value = pitchMessage;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
     }
+    setPitchCopied(true);
+    fireEvent("pitch_copied");
+    setTimeout(() => setPitchCopied(false), 2000);
   };
 
   return (
@@ -82,7 +149,8 @@ export default function OnboardingPage() {
           <div className="text-5xl mb-4">🚣</div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome!</h1>
           <p className="mt-2 text-gray-600 dark:text-gray-400">
-            To get started, join an existing boat club or create a new one.
+            Do you have a join code from your club? Join with it below — or set up a brand
+            new club in under a minute.
           </p>
         </div>
 
@@ -110,6 +178,17 @@ export default function OnboardingPage() {
               }`}
             >
               Create a Club
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("nocode")}
+              className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+                activeTab === "nocode"
+                  ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              }`}
+            >
+              No Code?
             </button>
           </div>
 
@@ -152,6 +231,17 @@ export default function OnboardingPage() {
                 >
                   {joining ? "Joining..." : "Join Club"}
                 </button>
+
+                <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+                  Don&apos;t have a code?{" "}
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("nocode")}
+                    className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
+                  >
+                    See your options
+                  </button>
+                </p>
               </form>
             )}
 
@@ -214,11 +304,64 @@ export default function OnboardingPage() {
                 </button>
               </form>
             )}
+
+            {/* No code yet */}
+            {activeTab === "nocode" && (
+              <div className="space-y-5">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  No problem — your club may not be on RowBook yet. You have two options:
+                </p>
+
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                    1. Set up your club yourself
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    It takes under a minute. You&apos;ll become the administrator and get a
+                    join code to share with your clubmates.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("create")}
+                    className="mt-3 w-full bg-green-600 text-white py-2.5 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                  >
+                    Create a Club
+                  </button>
+                </div>
+
+                <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                    2. Ask your club to set it up
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    Send a ready-made message to whoever runs bookings at your club.
+                  </p>
+                  <input
+                    type="text"
+                    value={pitchClubName}
+                    onChange={(e) => setPitchClubName(e.target.value)}
+                    placeholder="Your club's name (optional)"
+                    maxLength={100}
+                    className="mt-3 w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  />
+                  <p className="mt-3 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 whitespace-pre-wrap">
+                    {pitchMessage}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleCopyPitch}
+                    className="mt-3 w-full border border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 py-2.5 rounded-lg font-semibold hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                  >
+                    {pitchCopied ? "✓ Copied!" : "Copy Message"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         <p className="mt-6 text-center text-xs text-gray-500 dark:text-gray-500">
-          Need help? Contact your club administrator for a join code.
+          Need help? Contact your club administrator for a join code, or create a new club above.
         </p>
 
         <div className="mt-4 flex justify-center">
@@ -226,5 +369,19 @@ export default function OnboardingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <p className="text-gray-500 dark:text-gray-400">Loading…</p>
+        </div>
+      }
+    >
+      <OnboardingContent />
+    </Suspense>
   );
 }

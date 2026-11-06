@@ -165,3 +165,26 @@ Based on typical usage:
   - Free tier likely sufficient, may need paid plan
 
 Resend pricing beyond free tier: $20/month for 50,000 emails.
+
+## Onboarding Reminder Emails
+
+Users who sign up but never join or create a club receive a one-off re-engagement
+email after 3 days, sent by `POST /api/cron/onboarding-reminder`.
+
+### Setup
+
+1. Run `ONBOARDING_REMINDER_MIGRATION.sql` against your Supabase database
+   (adds `User.onboardingReminderSentAt` plus a partial index).
+2. Add a `CRON_SECRET` environment variable (any long random string).
+3. Schedule a daily job with any external cron service (Render Cron Job,
+   GitHub Actions schedule, cron-job.org, etc.):
+
+```bash
+curl -X POST https://your-app-url/api/cron/onboarding-reminder \
+  -H "Authorization: Bearer $CRON_SECRET"
+```
+
+Each run processes up to 50 users and marks them with
+`onboardingReminderSentAt` only when the email sends successfully, so
+transient failures are retried on the next run and each user is emailed at
+most once.

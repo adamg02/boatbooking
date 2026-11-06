@@ -1,29 +1,45 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { getSupabaseClientComponent } from "@/lib/supabase-client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function SignIn() {
+function SignInContent() {
   const [loading, setLoading] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = getSupabaseClientComponent();
+
+  // Only allow internal relative paths to prevent open redirects
+  const rawNext = searchParams.get("next");
+  const next = rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : null;
+
+  // "signup" intent (e.g. from the home page "Get started free" CTA) adapts
+  // the copy; the underlying OAuth flow is identical.
+  const isSignup = searchParams.get("intent") === "signup";
+  const verb = isSignup ? "Sign up" : "Sign in";
+  const loadingLabel = isSignup ? "Signing up..." : "Signing in...";
+  const nextQuery = next ? `&next=${encodeURIComponent(next)}` : "";
 
   useEffect(() => {
     // Check if user is already signed in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        router.push('/boats');
+        router.push(next ?? '/boats');
       }
     });
-  }, [router, supabase.auth]);
+  }, [router, supabase.auth, next]);
 
   const signInWithProvider = async (provider: 'google' | 'azure' | 'facebook') => {
     setLoading(provider);
+    const callbackUrl = next
+      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+      : `${window.location.origin}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: callbackUrl,
       },
     });
     
@@ -37,7 +53,14 @@ export default function SignIn() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50 dark:bg-gray-900">
       <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
-        <h1 className="text-3xl font-bold text-center mb-8">Sign In</h1>
+        <h1 className="text-3xl font-bold text-center mb-3">
+          {isSignup ? "Get Started" : "Sign In"}
+        </h1>
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400 mb-8">
+          {isSignup
+            ? "Create your free account with Google, Microsoft or Facebook — no password needed. Then join your club with a join code, or set up a new club in under a minute."
+            : "New here? After signing in you can join your club with a join code — or set up a new club in under a minute."}
+        </p>
         
         <div className="space-y-4">
           <button
@@ -63,7 +86,7 @@ export default function SignIn() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            {loading === 'google' ? 'Signing in...' : 'Sign in with Google'}
+            {loading === 'google' ? loadingLabel : `${verb} with Google`}
           </button>
 
           <button
@@ -74,7 +97,7 @@ export default function SignIn() {
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zm12.6 0H12.6V0H24v11.4z"/>
             </svg>
-            {loading === 'azure' ? 'Signing in...' : 'Sign in with Microsoft'}
+            {loading === 'azure' ? loadingLabel : `${verb} with Microsoft`}
           </button>
 
           <button
@@ -85,10 +108,48 @@ export default function SignIn() {
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
             </svg>
-            {loading === 'facebook' ? 'Signing in...' : 'Sign in with Facebook'}
+            {loading === 'facebook' ? loadingLabel : `${verb} with Facebook`}
           </button>
         </div>
+
+        <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+          {isSignup ? (
+            <>
+              Already have an account?{" "}
+              <Link
+                href={`/auth/signin?intent=signin${nextQuery}`}
+                className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
+              >
+                Sign in
+              </Link>
+            </>
+          ) : (
+            <>
+              New to RowBook?{" "}
+              <Link
+                href={`/auth/signin?intent=signup${nextQuery}`}
+                className="text-blue-600 dark:text-blue-400 font-medium hover:underline"
+              >
+                Get started free
+              </Link>
+            </>
+          )}
+        </p>
       </div>
     </div>
+  );
+}
+
+export default function SignIn() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <p className="text-gray-500 dark:text-gray-400">Loading…</p>
+        </div>
+      }
+    >
+      <SignInContent />
+    </Suspense>
   );
 }

@@ -77,9 +77,15 @@ export async function GET(request: Request) {
       }
 
       // Send new users through the welcome page so a GA sign_up event fires
-      // before they reach the main app.
+      // before they reach onboarding. Preserve any ?next (e.g. invite links).
       if (isNewUser) {
-        return NextResponse.redirect(`${origin}/auth/welcome`);
+        const welcomeUrl = new URL('/auth/welcome', origin);
+        const newUserNext = requestUrl.searchParams.get("next");
+        if (newUserNext && isSafeRedirectUrl(newUserNext, origin)) {
+          const nextUrl = new URL(newUserNext, origin);
+          welcomeUrl.searchParams.set('next', nextUrl.pathname + nextUrl.search);
+        }
+        return NextResponse.redirect(welcomeUrl.toString());
       }
 
       // Send returning users through the signed-in page so a GA login event fires.

@@ -17,6 +17,7 @@ export default function AdminClubPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -68,6 +69,23 @@ export default function AdminClubPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const handleCopyInviteLink = async () => {
+    if (!club) return;
+    const inviteLink = `${window.location.origin}/onboarding?code=${club.joinCode}`;
+    try {
+      await navigator.clipboard.writeText(inviteLink);
+    } catch {
+      const el = document.createElement("textarea");
+      el.value = inviteLink;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+    }
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   };
 
   const handleRegenerateCode = async () => {
@@ -266,6 +284,20 @@ export default function AdminClubPage() {
                   className="px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors whitespace-nowrap"
                 >
                   {copied ? "✓ Copied!" : "Copy Code"}
+                </button>
+              </div>
+
+              <div className="mt-3">
+                <p className="text-sm text-gray-500 mb-2">
+                  Even easier: share an invite link — new members just click it, sign in,
+                  and they&apos;re in. No code to type.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleCopyInviteLink}
+                  className="w-full px-4 py-2.5 border border-blue-600 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors"
+                >
+                  {linkCopied ? "✓ Invite link copied!" : "Copy Invite Link"}
                 </button>
               </div>
 
