@@ -35,6 +35,7 @@ function ensureInit(): boolean {
     debug: process.env.NODE_ENV === "development",
     track_pageview: "url-with-path",
     persistence: "localStorage",
+    api_host: "https://api-eu.mixpanel.com",
   });
   initialized = true;
   if (mixpanel.has_opted_out_tracking()) return false;
