@@ -15,7 +15,8 @@
  *
  * Analytics cookies (require consent):
  *  • Google Analytics (_ga, _gid, _ga_*) – used for anonymous usage statistics.
- *  • Mixpanel (mp_* in localStorage) – product usage analytics.
+ *  • Mixpanel (mp_* in localStorage) – product usage analytics and session
+ *    replay (masked recordings of page interactions).
  */
 
 import { useEffect, useState, useCallback } from "react";
@@ -130,6 +131,7 @@ export default function CookieBanner() {
   useEffect(() => {
     setMounted(true);
     const stored = readConsentFromBrowser();
+    if (stored) setDraft(stored);
     if (!stored || !stored.decided) {
       // No valid consent stored – show the banner
       setVisible(true);
@@ -220,8 +222,8 @@ export default function CookieBanner() {
                   <p className="mt-1 text-xs text-gray-600 leading-relaxed">
                     We use <strong>strictly necessary</strong> cookies to keep the site
                     working (login session, language preference). With your consent we
-                    also use <strong>Google Analytics</strong> and <strong>Mixpanel</strong> to understand how the
-                    site is used — no personal data is shared with third parties for
+                    also use <strong>Google Analytics</strong> and <strong>Mixpanel</strong> (including masked session
+                    recordings) to understand how the site is used — no personal data is shared with third parties for
                     advertising.
                   </p>
                 </div>
@@ -295,7 +297,7 @@ export default function CookieBanner() {
                 <CategoryRow
                   id="cookie-analytics"
                   title="Analytics (Google Analytics, Mixpanel)"
-                  description="Page-view and usage statistics via Google Analytics (_ga, _gid) and Mixpanel. Helps us improve the product. No data is sold or used for advertising."
+                  description="Page-view and usage statistics via Google Analytics (_ga, _gid) and Mixpanel, including session recordings of page interactions with all text and form inputs masked. Helps us improve the product. No data is sold or used for advertising."
                   checked={draft.analytics}
                   onChange={(v) => setDraft((d) => ({ ...d, analytics: v }))}
                 />

@@ -230,6 +230,7 @@ Mixpanel product analytics runs alongside GA4 and is implemented in [`src/lib/mi
 
 - **Token**: `NEXT_PUBLIC_MIXPANEL_TOKEN` (falls back to the RowBook project token if unset). Use a separate token per environment to keep dev data out of production.
 - **Data residency**: the project is hosted in the EU, so events are sent to `https://api-eu.mixpanel.com` (also allowed in the CSP `connect-src` in `next.config.ts`).
+- **Session Replay**: enabled for 100% of consented sessions (`record_sessions_percent` in `mixpanel.ts`), with heatmap data. The SDK masks all text and inputs and blocks `img`/`video`/`audio` by default; add `class="mp-block"` to hide any other element entirely. Recording stops when analytics consent is withdrawn.
 - **Consent**: Mixpanel is only initialised after the user accepts analytics in the cookie banner. Withdrawing consent calls `opt_out_tracking()`.
 - **Events**: every `fireEvent()` call in [`src/lib/gtag.ts`](src/lib/gtag.ts) is also sent to Mixpanel. GA's `sign_up` / `login` are renamed to `sign_up_completed` / `login_completed`. Page views are tracked automatically (`$mp_web_page_view`).
 - **Identity**: [`MixpanelIdentity`](src/components/MixpanelIdentity.tsx) calls `identify(user.id)` (plus `$email` / `$name`) whenever a Supabase session exists and `reset()` on sign-out. The welcome and signed-in pages identify before firing their events.

@@ -36,6 +36,10 @@ function ensureInit(): boolean {
     track_pageview: "url-with-path",
     persistence: "localStorage",
     api_host: "https://api-eu.mixpanel.com",
+    // Session Replay. SDK defaults mask all text and inputs and block
+    // img/video/audio; add class="mp-block" to hide any other element.
+    record_sessions_percent: 100,
+    record_heatmap_data: true,
   });
   initialized = true;
   if (mixpanel.has_opted_out_tracking()) return false;
@@ -50,9 +54,11 @@ export function applyMixpanelConsent(analytics: boolean): void {
     // A previous withdrawal persists an opt-out flag; clear it on re-consent.
     if (!ensureInit() && initialized) {
       mixpanel.opt_in_tracking();
+      mixpanel.start_session_recording();
       if (currentUser) applyIdentity(currentUser);
     }
   } else if (initialized && !mixpanel.has_opted_out_tracking()) {
+    mixpanel.stop_session_recording();
     mixpanel.opt_out_tracking();
     identifiedUserId = null;
   }
