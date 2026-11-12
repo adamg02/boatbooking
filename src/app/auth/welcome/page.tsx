@@ -3,22 +3,39 @@
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fireEvent } from "@/lib/gtag";
+import { identifyUser, toAnalyticsUser } from "@/lib/mixpanel";
+import { getSupabaseClientComponent } from "@/lib/supabase-client";
 
 function WelcomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    fireEvent("sign_up", { method: "oauth" });
+    let cancelled = false;
 
-    // New users have no club yet, so go straight to onboarding (honouring an
-    // invite link's ?next) instead of bouncing /boats → middleware → onboarding.
-    // Replace this page in history so the back button skips it,
-    // preventing the conversion from being counted more than once.
-    const rawNext = searchParams.get("next");
-    const next =
-      rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/onboarding";
-    router.replace(next);
+    (async () => {
+      // Identify before tracking so sign_up_completed is attributed to the user.
+      const { data } = await getSupabaseClientComponent().auth.getUser();
+      if (cancelled) return;
+      if (data.user) identifyUser(toAnalyticsUser(data.user));
+      fireEvent("sign_up", {
+        method: "oauth",
+        sign_up_method: data.user?.app_metadata?.provider ?? "oauth",
+      });
+
+      // New users have no club yet, so go straight to onboarding (honouring an
+      // invite link's ?next) instead of bouncing /boats → middleware → onboarding.
+      // Replace this page in history so the back button skips it,
+      // preventing the conversion from being counted more than once.
+      const rawNext = searchParams.get("next");
+      const next =
+        rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/onboarding";
+      router.replace(next);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router, searchParams]);
 
   return (

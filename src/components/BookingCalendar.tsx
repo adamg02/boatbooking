@@ -137,7 +137,12 @@ export default function BookingCalendar({
 
       if (response.ok) {
         toast.success("Booking confirmed!");
-        fireEvent("booking_created", { boat_id: boat.id, boat_name: boat.name });
+        fireEvent("booking_created", {
+          boat_id: boat.id,
+          boat_name: boat.name,
+          duration_minutes: Math.round((endTime.getTime() - startTime.getTime()) / 60000),
+          is_first_booking: Boolean(data.isFirstBooking),
+        });
         if (data.isFirstBooking) {
           fireEvent("first_booking", { boat_id: boat.id, boat_name: boat.name });
         }

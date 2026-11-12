@@ -223,3 +223,25 @@ For issues specific to:
 - **Google Analytics setup**: Check Google Analytics Help Center
 - **Application integration**: Open an issue on the GitHub repository
 - **Privacy/GDPR compliance**: Consult with a legal professional
+
+## Mixpanel
+
+Mixpanel product analytics runs alongside GA4 and is implemented in [`src/lib/mixpanel.ts`](src/lib/mixpanel.ts).
+
+- **Token**: `NEXT_PUBLIC_MIXPANEL_TOKEN` (falls back to the RowBook project token if unset). Use a separate token per environment to keep dev data out of production.
+- **Consent**: Mixpanel is only initialised after the user accepts analytics in the cookie banner. Withdrawing consent calls `opt_out_tracking()`.
+- **Events**: every `fireEvent()` call in [`src/lib/gtag.ts`](src/lib/gtag.ts) is also sent to Mixpanel. GA's `sign_up` / `login` are renamed to `sign_up_completed` / `login_completed`. Page views are tracked automatically (`$mp_web_page_view`).
+- **Identity**: [`MixpanelIdentity`](src/components/MixpanelIdentity.tsx) calls `identify(user.id)` (plus `$email` / `$name`) whenever a Supabase session exists and `reset()` on sign-out. The welcome and signed-in pages identify before firing their events.
+
+### Key events
+
+| Event | Fires when | Properties |
+|---|---|---|
+| `sign_up_completed` | New user lands on `/auth/welcome` after OAuth | `sign_up_method` (google/azure/facebook), `platform` |
+| `booking_created` (value moment) | Booking API returns success in `BookingCalendar` | `boat_id`, `boat_name`, `duration_minutes`, `is_first_booking`, `platform` |
+
+### Verifying
+
+1. `npm run dev`, accept analytics cookies, then sign in and make a booking.
+2. Open Mixpanel → **Events** (Live View) and confirm `sign_up_completed` / `login_completed` and `booking_created` appear against your user ID.
+3. In development the SDK logs to the browser console (`debug: true`).

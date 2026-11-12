@@ -12,7 +12,7 @@ const nextConfig = {
       // Allow images from HTTPS (user-supplied boat images) and data URIs
       "img-src 'self' data: blob: https:",
       // API/WebSocket connections to Supabase and analytics
-      "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://api.stripe.com",
+      "connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://api.stripe.com https://api-js.mixpanel.com",
       "font-src 'self' data:",
       // Stripe payment element uses an iframe
       "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",

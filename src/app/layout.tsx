@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import ToastProvider from "@/components/ToastProvider";
 import CookieBanner from "@/components/CookieBanner";
+import MixpanelIdentity from "@/components/MixpanelIdentity";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import Script from "next/script";
 import { cookies } from "next/headers";
@@ -90,6 +91,7 @@ gtag('js', new Date());
         {children}
         <ToastProvider />
         <CookieBanner />
+        <MixpanelIdentity />
         {gaId && <GoogleAnalytics gaId={gaId} debugMode={isDev} />}
       </body>
     </html>

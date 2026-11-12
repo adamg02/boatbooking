@@ -13,6 +13,7 @@
  *
  * Analytics cookies – require consent before being activated:
  *   • Google Analytics               (_ga, _gid, _ga_*)
+ *   • Mixpanel                       (mp_* localStorage)
  */
 
 export const CONSENT_COOKIE_NAME = "rowbook-cookie-consent";

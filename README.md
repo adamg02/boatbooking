@@ -10,6 +10,7 @@ A mobile-first web application for booking rowing boats with social authenticati
 - 📱 **Mobile-First Design**: Responsive interface optimized for mobile devices
 - ⏰ **Real-time Availability**: See available slots and book instantly
 - 📊 **Google Analytics**: Optional analytics tracking with configurable GA4 measurement ID
+- 📈 **Mixpanel**: Consent-gated product analytics (see [ANALYTICS_SETUP.md](ANALYTICS_SETUP.md#mixpanel))
 
 ## Tech Stack
 
@@ -19,7 +20,7 @@ A mobile-first web application for booking rowing boats with social authenticati
 - **Authentication**: Supabase Auth with OAuth
 - **Database**: Supabase (PostgreSQL) with Supabase JS Client
 - **Date Handling**: date-fns
-- **Analytics**: Google Analytics (via @next/third-parties)
+- **Analytics**: Google Analytics (via @next/third-parties), Mixpanel (mixpanel-browser)
 
 ## Prerequisites
 
@@ -53,6 +54,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
 # Google Analytics (Optional)
 # Get your GA4 Measurement ID from Google Analytics (e.g., G-XXXXXXXXXX)
 NEXT_PUBLIC_GA_MEASUREMENT_ID="G-XXXXXXXXXX"
+
+# Mixpanel (Optional - defaults to the RowBook project token)
+NEXT_PUBLIC_MIXPANEL_TOKEN="your-mixpanel-project-token"
 ```
 
 **That's it!** No OAuth provider credentials needed in your app - they're managed in the Supabase Dashboard.

@@ -15,6 +15,7 @@
  *
  * Analytics cookies (require consent):
  *  • Google Analytics (_ga, _gid, _ga_*) – used for anonymous usage statistics.
+ *  • Mixpanel (mp_* in localStorage) – product usage analytics.
  */
 
 import { useEffect, useState, useCallback } from "react";
@@ -26,6 +27,7 @@ import {
   writeConsentToBrowser,
   applyGAConsent,
 } from "@/lib/cookie-consent";
+import { applyMixpanelConsent } from "@/lib/mixpanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -134,6 +136,7 @@ export default function CookieBanner() {
     } else {
       // Re-apply consent so GA respects stored preference on every page load
       applyGAConsent(stored.analytics);
+      applyMixpanelConsent(stored.analytics);
     }
   }, []);
 
@@ -143,6 +146,7 @@ export default function CookieBanner() {
     (prefs: ConsentPreferences) => {
       writeConsentToBrowser(prefs);
       applyGAConsent(prefs.analytics);
+      applyMixpanelConsent(prefs.analytics);
       setVisible(false);
     },
     []
@@ -216,7 +220,7 @@ export default function CookieBanner() {
                   <p className="mt-1 text-xs text-gray-600 leading-relaxed">
                     We use <strong>strictly necessary</strong> cookies to keep the site
                     working (login session, language preference). With your consent we
-                    also use <strong>Google Analytics</strong> to understand how the
+                    also use <strong>Google Analytics</strong> and <strong>Mixpanel</strong> to understand how the
                     site is used — no personal data is shared with third parties for
                     advertising.
                   </p>
@@ -290,8 +294,8 @@ export default function CookieBanner() {
                 />
                 <CategoryRow
                   id="cookie-analytics"
-                  title="Analytics (Google Analytics)"
-                  description="Anonymous page-view and usage statistics via Google Analytics (_ga, _gid). Helps us improve the product. No data is sold or used for advertising."
+                  title="Analytics (Google Analytics, Mixpanel)"
+                  description="Page-view and usage statistics via Google Analytics (_ga, _gid) and Mixpanel. Helps us improve the product. No data is sold or used for advertising."
                   checked={draft.analytics}
                   onChange={(v) => setDraft((d) => ({ ...d, analytics: v }))}
                 />
@@ -301,7 +305,7 @@ export default function CookieBanner() {
               <p className="text-xs text-gray-400 mb-4 leading-relaxed">
                 <strong className="text-gray-500">California residents:</strong> We do
                 not sell your personal information. Disabling analytics cookies opts
-                you out of any sharing of usage data with Google Analytics. See our{" "}
+                you out of any sharing of usage data with Google Analytics and Mixpanel. See our{" "}
                 <a href="/privacy" className="underline hover:text-gray-600">
                   Privacy Policy
                 </a>{" "}
